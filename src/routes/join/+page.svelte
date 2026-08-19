@@ -1,11 +1,10 @@
 <script lang="ts">
-	import { authState, Flex, whenAuthReady } from "@davidnet-net/svelte-ui";
+	import { authState, Button, Flex, navigateBack, whenAuthReady } from "@davidnet-net/svelte-ui";
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 	import { PUBLIC_ACCOUNT_FRONTEND_URL } from "$env/static/public";
 	import CodeInput from "$lib/components/CodeInput/CodeInput.svelte";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
-	import Card from "$lib/components/Card/Card.svelte";
 
 	$effect(() => {
 		(async () => {
@@ -17,15 +16,19 @@
 	});
 </script>
 
-<Flex justifyContent="center" alignItems="center" direction="column" gap="medium">
-	<h1>Davidnet Quizes</h1>
-	<Flex
-		justifyContent="center"
-		alignItems="center"
-		direction="row"
-		gap="medium"
-		height="fit-content">
-		<Card title="Join quiz" href="/join" icon="play_circle" />
-		<Card title="Manage quizes" icon="bookmark_manager" href="/manage" />
-	</Flex>
+<Flex justifyContent="center" alignItems="center" direction="column" gap="medium" text="center">
+	<div>
+		<h1>Join quiz</h1>
+		<p style="color: {token.theme.color.text.secondary}">
+			Enter the code displayed on the host screen.
+		</p>
+	</div>
+	<CodeInput />
+	<Button
+		iconbefore="arrow_back"
+		onclick={() => {
+			navigateBack();
+		}}>
+		Back
+	</Button>
 </Flex>
