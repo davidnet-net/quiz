@@ -59,7 +59,7 @@
 		}
 		toast(
 			"Not allowed",
-			"You are not allowed to quizes:create inside your workspace.",
+			"You are not allowed to quizes:create inside this workspace.",
 			"rule",
 			5000,
 			"danger"
