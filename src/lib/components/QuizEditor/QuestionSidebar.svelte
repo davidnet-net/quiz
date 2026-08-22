@@ -5,11 +5,13 @@
 	let {
 		questionSidebarOpened = true,
 		openDropdown = null,
+		loading,
 		onToggle,
 		onDropdownToggle
 	}: {
 		questionSidebarOpened: boolean;
 		openDropdown: string | null;
+		loading: boolean;
 		onToggle: () => void;
 		onDropdownToggle: (name: string | null) => void;
 	} = $props();
@@ -21,6 +23,7 @@
 			<Dropdown isOpen={openDropdown === "compact-time-limit"}>
 				{#snippet trigger()}
 					<IconButton
+						{loading}
 						icon="schedule"
 						appearance="default"
 						tip="Time limit"
@@ -29,13 +32,25 @@
 								openDropdown === "compact-time-limit" ? null : "compact-time-limit"
 							)} />
 				{/snippet}
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					10 seconds
 				</Button>
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					30 seconds
 				</Button>
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					60 seconds
 				</Button>
 			</Dropdown>
@@ -43,16 +58,25 @@
 			<Dropdown isOpen={openDropdown === "compact-points"}>
 				{#snippet trigger()}
 					<IconButton
+						{loading}
 						icon="workspace_premium"
 						appearance="default"
 						tip="Points"
 						onclick={() =>
 							onDropdownToggle(openDropdown === "compact-points" ? null : "compact-points")} />
 				{/snippet}
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					Standard
 				</Button>
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					Double points
 				</Button>
 			</Dropdown>
@@ -60,6 +84,7 @@
 			<Dropdown isOpen={openDropdown === "compact-answer-options"}>
 				{#snippet trigger()}
 					<IconButton
+						{loading}
 						icon="view_cozy"
 						appearance="default"
 						tip="Answer options"
@@ -68,21 +93,31 @@
 								openDropdown === "compact-answer-options" ? null : "compact-answer-options"
 							)} />
 				{/snippet}
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					Single select
 				</Button>
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					Multi select
 				</Button>
 			</Dropdown>
 			<br />
 			<br />
 			<IconButton
+				{loading}
 				icon="control_point_duplicate"
 				appearance="default"
 				tip="Duplicate"
 				onclick={() => {}} />
 			<IconButton
+				{loading}
 				icon="delete_forever"
 				appearance="default"
 				tip="Delete question"
@@ -100,6 +135,7 @@
 			<Dropdown isOpen={openDropdown === "time-limit"} stretchWidthTrigger>
 				{#snippet trigger()}
 					<Button
+						{loading}
 						alignContent="left"
 						stretchwidth
 						appearance="default"
@@ -107,13 +143,25 @@
 						30 seconds
 					</Button>
 				{/snippet}
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					10 seconds
 				</Button>
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					30 seconds
 				</Button>
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					60 seconds
 				</Button>
 			</Dropdown>
@@ -125,6 +173,7 @@
 			<Dropdown isOpen={openDropdown === "points"} stretchWidthTrigger>
 				{#snippet trigger()}
 					<Button
+						{loading}
 						alignContent="left"
 						stretchwidth
 						appearance="default"
@@ -132,10 +181,18 @@
 						Normal
 					</Button>
 				{/snippet}
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					Standard
 				</Button>
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					Double points
 				</Button>
 			</Dropdown>
@@ -147,6 +204,7 @@
 			<Dropdown isOpen={openDropdown === "answer-options"} stretchWidthTrigger>
 				{#snippet trigger()}
 					<Button
+						{loading}
 						alignContent="left"
 						stretchwidth
 						appearance="default"
@@ -155,10 +213,18 @@
 						Single select
 					</Button>
 				{/snippet}
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					Single select
 				</Button>
-				<Button appearance="subtle" alignContent="left" onclick={() => onDropdownToggle(null)}>
+				<Button
+					{loading}
+					appearance="subtle"
+					alignContent="left"
+					onclick={() => onDropdownToggle(null)}>
 					Multi select
 				</Button>
 			</Dropdown>
@@ -166,10 +232,10 @@
 			<br />
 			<Divider color="tertiary" />
 			<br />
-			<Button alignContent="left" stretchwidth appearance="default" onclick={() => {}}>
+			<Button {loading} alignContent="left" stretchwidth appearance="default" onclick={() => {}}>
 				Duplicate
 			</Button>
-			<Button alignContent="left" stretchwidth appearance="default" onclick={() => {}}>
+			<Button {loading} alignContent="left" stretchwidth appearance="default" onclick={() => {}}>
 				Delete question
 			</Button>
 		</Flex>
