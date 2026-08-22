@@ -16,7 +16,13 @@
 	});
 </script>
 
-<Flex justifyContent="center" alignItems="center" direction="column" gap="medium" text="center">
+<Flex
+	justifyContent="center"
+	alignItems="center"
+	direction="column"
+	gap="medium"
+	text="center"
+	padding="giant">
 	<div>
 		<h1>Join quiz</h1>
 		<p style="color: {token.theme.color.text.secondary}">

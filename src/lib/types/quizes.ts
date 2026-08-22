@@ -1,6 +1,7 @@
 export interface Quiz {
 	id: string;
 	workspaceId: string;
+	teamId: string | null;
 	name: string;
 	createdAt: string;
 	updatedAt: string;
