@@ -29,7 +29,6 @@ export function QuizRoom(getQuizId: () => string) {
 	let socket = $state<WebSocket | null>(null);
 
 	const awareness = new awarenessProtocol.Awareness(doc);
-
 	const quizMeta = doc.getMap<string>("quizMeta");
 	const questionsArray = doc.getArray<Y.Map<any>>("questions");
 
@@ -44,26 +43,20 @@ export function QuizRoom(getQuizId: () => string) {
 		const rawUrl = PUBLIC_BACKEND_URL.includes("://")
 			? PUBLIC_BACKEND_URL
 			: `http://${PUBLIC_BACKEND_URL}`;
-
 		const parsedUrl = new URL(rawUrl);
 		const wsProtocol = parsedUrl.protocol === "https:" ? "wss:" : "ws:";
 
 		const httpUrl = `${PUBLIC_BACKEND_URL}/websockets/quiz/${quizId}`;
 		const wsUrl = `${wsProtocol}//${parsedUrl.host}/websockets/quiz/${quizId}`;
 
-		// 1. Pre-flight check to catch 403 / 404 HTTP statuses
+		let isIntentionallyClosed = false;
+		let reconnectTimeout: ReturnType<typeof setTimeout>;
+		let reconnectAttempts = 0;
+
 		fetch(httpUrl, { credentials: "include" })
 			.then((res) => {
-				if (res.status === 403) {
-					goto(`/manage/${quizId}/no_access`);
-					return;
-				}
-				if (res.status === 404) {
-					console.log(res);
-					goto(`/manage/${quizId}/not_found`, { replaceState: true }); // fake path to trigger 404 on purpose
-					return;
-				}
-				// If the status is 426 (Upgrade Required) or 200, we proceed to open the WS
+				if (res.status === 403) return goto(`/manage/${quizId}/no_access`);
+				if (res.status === 404) return goto(`/manage/${quizId}/not_found`, { replaceState: true });
 				connectWebSocket();
 			})
 			.catch((err) => {
@@ -71,8 +64,9 @@ export function QuizRoom(getQuizId: () => string) {
 				connectWebSocket();
 			});
 
-		// 2. Wrap the actual WS connection logic in a function
 		function connectWebSocket() {
+			if (isIntentionallyClosed) return;
+
 			const ws = new WebSocket(wsUrl);
 			ws.binaryType = "arraybuffer";
 			socket = ws;
@@ -80,9 +74,9 @@ export function QuizRoom(getQuizId: () => string) {
 			ws.onopen = () => {
 				console.log("[Quiz Editor] Connected to YJS room");
 				loading = false;
+				reconnectAttempts = 0;
 
 				const currentState = awareness.getLocalState() || {};
-
 				if (!currentState?.user?.userId) {
 					awareness.setLocalState({
 						...currentState,
@@ -117,19 +111,31 @@ export function QuizRoom(getQuizId: () => string) {
 					Y.applyUpdate(doc, payload);
 				} else if (messageType === 1) {
 					awarenessProtocol.applyAwarenessUpdate(awareness, payload, "remote");
+				} else if (messageType === 2) {
+					// 2 = Ping from server, reply with 3 = Pong
+					ws.send(new Uint8Array([3]));
 				}
 			};
 
-			// Alternative Fallback: In case the backend drops the connection with custom codes
 			ws.onclose = (event) => {
+				if (isIntentionallyClosed) return;
+
 				if (event.code === 4003 || event.reason.includes("403")) {
-					goto(`/manage/${quizId}/no_access`);
+					return goto(`/manage/${quizId}/no_access`);
 				}
 				if (event.code === 4004 || event.reason.includes("404")) {
 					throw error(404, "Quiz not found");
 				}
+
+				// Exponential backoff reconnect
+				loading = true;
+				const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
+				reconnectAttempts++;
+				console.log(`[Quiz Editor] Connection lost. Reconnecting in ${delay}ms...`);
+				reconnectTimeout = setTimeout(connectWebSocket, delay);
 			};
 
+			// Bind doc and awareness updates specifically to THIS active websocket
 			const docUpdateHandler = (update: Uint8Array) => {
 				if (ws.readyState === WebSocket.OPEN) {
 					const message = new Uint8Array(1 + update.length);
@@ -138,17 +144,8 @@ export function QuizRoom(getQuizId: () => string) {
 					ws.send(message);
 				}
 			};
-			doc.on("update", docUpdateHandler);
 
-			const awarenessUpdateHandler = ({
-				added,
-				updated,
-				removed
-			}: {
-				added: number[];
-				updated: number[];
-				removed: number[];
-			}) => {
+			const awarenessUpdateHandler = ({ added, updated, removed }: any) => {
 				const changedClients = [...added, ...updated, ...removed];
 				const awarenessUpdate = awarenessProtocol.encodeAwarenessUpdate(awareness, changedClients);
 
@@ -159,7 +156,15 @@ export function QuizRoom(getQuizId: () => string) {
 					ws.send(message);
 				}
 			};
+
+			doc.on("update", docUpdateHandler);
 			awareness.on("update", awarenessUpdateHandler);
+
+			// Internal cleanup to unbind events when this specific WS closes
+			ws.addEventListener("close", () => {
+				doc.off("update", docUpdateHandler);
+				awareness.off("update", awarenessUpdateHandler);
+			});
 		}
 
 		const syncState = () => {
@@ -177,7 +182,8 @@ export function QuizRoom(getQuizId: () => string) {
 		awareness.on("change", syncAwarenessState);
 
 		return () => {
-			// Clean up when the effect runs again or unmounts
+			isIntentionallyClosed = true;
+			clearTimeout(reconnectTimeout);
 			doc.off("update", syncState);
 			awareness.off("update", syncAwarenessState);
 			awareness.off("change", syncAwarenessState);

@@ -38,6 +38,8 @@
 
 	// Profile cache for active room users fetched via your profile API
 	let userProfiles = $state<Record<string, any>>({});
+	// Prevent duplicate API fetches in the reactive effect
+	const fetchingProfiles = new Set<string>();
 
 	// 1. Initialize Room & Bind state
 	const room = QuizRoom(() => (authState.isLoggedIn ? params.quizid : ""));
@@ -50,7 +52,7 @@
 	// 2. Room Presence & Active Collaborators List
 	let activeUsersList = $derived([...room.activeUsers.entries()]);
 
-	// 3. Deduplicated Data for UI (Moved from HTML to $derived for Svelte 5)
+	// 3. Deduplicated Data for UI
 	let uniqueCursors = $derived(
 		Object.values(
 			activeUsersList.reduce(
@@ -62,10 +64,8 @@
 					)
 						return acc;
 
-					// Fallback to clientId if it's an anonymous guest
 					const uid = clientState.user?.userId || clientId.toString();
 
-					// Overwrite if this tab is explicitly focused, or if we haven't seen this user yet
 					if (!acc[uid] || clientState.isFocused) {
 						acc[uid] = clientState;
 					}
@@ -86,7 +86,7 @@
 		)
 	);
 
-	// Sync authenticated user's profile details into awareness state once available
+	// Sync authenticated user's profile details into awareness state
 	$effect(() => {
 		if (identityState.user) {
 			room.updatePresence({
@@ -96,25 +96,32 @@
 					userId: identityState.user.userID,
 					avatarUrl: identityState.user.avatarURL || ""
 				},
-				isFocused: document.hasFocus() // Initial focus state when identity is bound
+				isFocused: document.hasFocus()
 			});
 		}
 	});
 
-	// Fetch profile data for active users via your API endpoint when they join or update
+	// Fetch profile data safely with a Set to prevent race-condition dupes
 	$effect(() => {
 		for (const [clientId, clientState] of activeUsersList) {
 			const userId = clientState?.user?.userId;
-			if (userId && !userProfiles[userId]) {
+			if (userId && !userProfiles[userId] && !fetchingProfiles.has(userId)) {
+				fetchingProfiles.add(userId); // Mark as fetching
 				(async () => {
-					const profileResult = await getFetch(
-						`${PUBLIC_BACKEND_URL}/auth/profile`,
-						{ user: userId },
-						undefined,
-						authState.isLoggedIn
-					);
-					if (profileResult.success && profileResult.profileResponse) {
-						userProfiles[userId] = profileResult.profileResponse;
+					try {
+						const profileResult = await getFetch(
+							`${PUBLIC_BACKEND_URL}/auth/profile`,
+							{ user: userId },
+							undefined,
+							authState.isLoggedIn
+						);
+						if (profileResult.success && profileResult.profileResponse) {
+							userProfiles[userId] = profileResult.profileResponse;
+						}
+					} catch (err) {
+						console.error("[Quiz Editor] Failed to fetch profile:", err);
+					} finally {
+						fetchingProfiles.delete(userId); // Clean up set in case of retry logic later
 					}
 				})();
 			}
@@ -126,7 +133,6 @@
 	let hasInitializedPresence = false;
 
 	$effect(() => {
-		// Map current unique remote users (excluding the local user from triggering their own toasts)
 		const currentRemoteUsers = new Map(
 			uniqueProfiles
 				.filter((p) => p.user.userId !== identityState.user?.userID)
@@ -134,13 +140,11 @@
 		);
 
 		if (!hasInitializedPresence) {
-			// First run: just record who is already here without spamming toasts
 			previousUsers = new Set(currentRemoteUsers.keys());
 			hasInitializedPresence = true;
 			return;
 		}
 
-		// Check for newly joined users
 		for (const [uid, clientState] of currentRemoteUsers.entries()) {
 			if (!previousUsers.has(uid)) {
 				const resolvedName = userProfiles[uid]?.displayName || clientState.user?.name || "Someone";
@@ -151,20 +155,16 @@
 					6000,
 					"subtle"
 				);
-				console.log(`[Quiz Editor] ${resolvedName} joined the room`);
 			}
 		}
 
-		// Check for users who left
 		for (const uid of previousUsers) {
 			if (!currentRemoteUsers.has(uid)) {
 				const resolvedName = userProfiles[uid]?.displayName || "Someone";
 				toast(`${resolvedName} stopped editing.`, "", "waving_hand", 6000, "subtle");
-				console.log(`[Quiz Editor] ${resolvedName} left the room`);
 			}
 		}
 
-		// Update the previous users tracker
 		previousUsers = new Set(currentRemoteUsers.keys());
 	});
 
@@ -188,7 +188,6 @@
 
 	let activeQuestionData = $derived(questions.find((q) => q.id === activeQuestionId) || null);
 
-	// Broadcast question selection
 	$effect(() => {
 		if (activeQuestionId !== null) {
 			room.updatePresence({ activeQuestionId });
@@ -216,7 +215,6 @@
 		});
 	});
 
-	// Login check
 	$effect(() => {
 		(async () => {
 			await whenAuthReady();
@@ -226,7 +224,6 @@
 		})();
 	});
 
-	// Auto-select first question once data arrives
 	$effect(() => {
 		if (!activeQuestionId && questions.length > 0) {
 			activeQuestionId = questions[0].id;
@@ -293,7 +290,6 @@
                     flex-direction: column;
                     align-items: flex-start;
                 ">
-			<!-- Pointer SVG icon -->
 			<svg
 				width="24"
 				height="24"
@@ -305,7 +301,6 @@
 					d="M5.5 3.21V20.8c-.05.45.45.72.8.43l3.78-3.15a1 1 0 0 1 .64-.23h6.05c.57 0 .81-.68.37-1.07L6.34 2.58c-.37-.33-.94-.06-.84.43z" />
 			</svg>
 
-			<!-- User Label Badge -->
 			<span
 				style="
                         background-color: {clientState.user?.color || '#3b82f6'};
