@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Flex, IconButton, Skeleton } from "@davidnet-net/svelte-ui";
+	import { Avatar, Button, Flex, IconButton, Skeleton } from "@davidnet-net/svelte-ui";
 	import * as styles from "./Sidebar.css.ts";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 
@@ -22,6 +22,9 @@
 		activeQuestionId = null,
 		mainSidebarOpened = true,
 		loading,
+		activeUsers = new Map(),
+		userProfiles = {},
+		currentClientId = null,
 		onToggle,
 		onNewQuestion,
 		onSelectQuestion
@@ -30,10 +33,15 @@
 		activeQuestionId: string | number | null;
 		mainSidebarOpened: boolean;
 		loading: boolean;
+		activeUsers?: Map<number, any>;
+		userProfiles?: Record<string, any>;
+		currentClientId?: number | null;
 		onToggle: () => void;
 		onNewQuestion: () => void;
 		onSelectQuestion: (id: string | number) => void;
 	} = $props();
+
+	let activeUsersList = $derived([...activeUsers.entries()]);
 
 	// Helper function to check if a question is invalid
 	function isQuestionInvalid(q: Question): boolean {
@@ -107,6 +115,12 @@
 			{:else}
 				{#each questions as q, index}
 					{@const invalid = isQuestionInvalid(q)}
+					{@const usersOnThisQuestion = activeUsersList.filter(
+						([clientId, clientState]) =>
+							clientId !== currentClientId &&
+							clientState?.activeQuestionId === q.id &&
+							clientState?.user
+					)}
 					<button
 						class={styles.questionCardItem}
 						style="{activeQuestionId === q.id
@@ -115,7 +129,37 @@
 							? 'border-color: rgb(239, 68, 68) !important; box-shadow: 0 0 0 1px rgb(239, 68, 68);'
 							: ''}"
 						onclick={() => onSelectQuestion(q.id)}>
-						<span class={styles.questionCardText}>Question {index + 1}</span>
+						<Flex direction="row" justifyContent="between" alignItems="center" style="width: 100%;">
+							<span class={styles.questionCardText}>Question {index + 1}</span>
+
+							<!-- Active Viewers Avatars Inside Question Card -->
+							{#if usersOnThisQuestion.length > 0}
+								<div style="display: flex; align-items: center; pointer-events: none;">
+									{#each usersOnThisQuestion as [clientId, clientState]}
+										{@const userId = clientState.user.userId}
+										{@const fetchedProfile = userId ? userProfiles[userId] : null}
+										{@const resolvedAvatar =
+											fetchedProfile?.avatarUrl || clientState.user.avatarUrl || ""}
+										{@const resolvedName =
+											fetchedProfile?.displayName || clientState.user.name || "User"}
+										<div
+											title="{resolvedName} is viewing this question"
+											style="
+                                                margin-left: -6px;
+                                                border: 2px solid rgba(0,0,0,0.3);
+                                                border-radius: 50%;
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                                background-color: {clientState.user.color ||
+												'#3b82f6'};
+                                            ">
+											<Avatar src={resolvedAvatar} size="small" alt={resolvedName} />
+										</div>
+									{/each}
+								</div>
+							{/if}
+						</Flex>
 						<p class={styles.questionCardTitle}>{q.text || "Empty question..."}</p>
 					</button>
 				{/each}

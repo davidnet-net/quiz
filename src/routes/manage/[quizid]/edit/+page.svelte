@@ -48,7 +48,7 @@
 	// 2. Room Presence & Active Collaborators List
 	let activeUsersList = $derived([...room.activeUsers.entries()]);
 
-	// Sync authenticated user's profile details into awareness state
+	// Sync authenticated user's profile details into awareness state once available
 	$effect(() => {
 		if (identityState.user) {
 			room.updatePresence({
@@ -185,6 +185,10 @@
 	<div style="position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden;">
 		{#each activeUsersList as [clientId, clientState]}
 			{#if clientId !== room.doc.clientID && clientState?.cursor && clientState.activeQuestionId === activeQuestionId}
+				{@const userId = clientState.user?.userId}
+				{@const fetchedProfile = userId ? userProfiles[userId] : null}
+				{@const resolvedName =
+					fetchedProfile?.displayName || clientState.user?.name || "Collaborator"}
 				<div
 					style="
                         position: absolute;
@@ -222,7 +226,7 @@
                             white-space: nowrap;
                             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
                         ">
-						{clientState.user?.name || "Collaborator"}
+						{resolvedName}
 						{#if clientState.focusedField}
 							<span style="opacity: 0.85;">({clientState.focusedField})</span>
 						{/if}
@@ -255,7 +259,7 @@
 								src={resolvedAvatar}
 								size="medium"
 								alt={resolvedName}
-								href={`${PUBLIC_ACCOUNT_FRONTEND_URL}/profile/${userId}`}
+								href={userId ? `${PUBLIC_ACCOUNT_FRONTEND_URL}/profile/${userId}` : undefined}
 								opennewtab />
 						{/if}
 					{/each}
@@ -272,6 +276,9 @@
 				{questions}
 				{activeQuestionId}
 				{mainSidebarOpened}
+				activeUsers={room.activeUsers}
+				{userProfiles}
+				currentClientId={room.doc.clientID}
 				onToggle={() => (mainSidebarOpened = !mainSidebarOpened)}
 				{loading}
 				onNewQuestion={() => (showNewQuestionModal = true)}
