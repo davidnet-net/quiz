@@ -12,7 +12,9 @@
 		useShortcut,
 		VisuallyHidden,
 		whenAuthReady,
-		getFetch
+		getFetch,
+		toast,
+		IconButton
 	} from "@davidnet-net/svelte-ui";
 	import * as styles from "./page.css.ts";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
@@ -48,16 +50,53 @@
 	// 2. Room Presence & Active Collaborators List
 	let activeUsersList = $derived([...room.activeUsers.entries()]);
 
+	// 3. Deduplicated Data for UI (Moved from HTML to $derived for Svelte 5)
+	let uniqueCursors = $derived(
+		Object.values(
+			activeUsersList.reduce(
+				(acc, [clientId, clientState]) => {
+					if (
+						clientId === room.doc.clientID ||
+						!clientState?.cursor ||
+						clientState.activeQuestionId !== activeQuestionId
+					)
+						return acc;
+
+					// Fallback to clientId if it's an anonymous guest
+					const uid = clientState.user?.userId || clientId.toString();
+
+					// Overwrite if this tab is explicitly focused, or if we haven't seen this user yet
+					if (!acc[uid] || clientState.isFocused) {
+						acc[uid] = clientState;
+					}
+					return acc;
+				},
+				{} as Record<string, any>
+			)
+		)
+	);
+
+	let uniqueProfiles = $derived(
+		Array.from(
+			new Map(
+				activeUsersList
+					.filter(([_, state]) => state?.user?.userId)
+					.map(([_, state]) => [state.user.userId, state])
+			).values()
+		)
+	);
+
 	// Sync authenticated user's profile details into awareness state once available
 	$effect(() => {
 		if (identityState.user) {
 			room.updatePresence({
 				user: {
-					name: identityState.user.displayName || identityState.user.username || "User",
+					name: identityState.user.displayName || identityState.user.username || "?",
 					color: room.awareness.getLocalState()?.user?.color || "#3b82f6",
 					userId: identityState.user.userID,
 					avatarUrl: identityState.user.avatarURL || ""
-				}
+				},
+				isFocused: document.hasFocus() // Initial focus state when identity is bound
 			});
 		}
 	});
@@ -82,7 +121,54 @@
 		}
 	});
 
-	// Track mouse movement globally to broadcast cursor coordinates
+	// 4. Track Join/Leave Events for Toasts
+	let previousUsers = new Set<string>();
+	let hasInitializedPresence = false;
+
+	$effect(() => {
+		// Map current unique remote users (excluding the local user from triggering their own toasts)
+		const currentRemoteUsers = new Map(
+			uniqueProfiles
+				.filter((p) => p.user.userId !== identityState.user?.userID)
+				.map((p) => [p.user.userId, p])
+		);
+
+		if (!hasInitializedPresence) {
+			// First run: just record who is already here without spamming toasts
+			previousUsers = new Set(currentRemoteUsers.keys());
+			hasInitializedPresence = true;
+			return;
+		}
+
+		// Check for newly joined users
+		for (const [uid, clientState] of currentRemoteUsers.entries()) {
+			if (!previousUsers.has(uid)) {
+				const resolvedName = userProfiles[uid]?.displayName || clientState.user?.name || "Someone";
+				toast(
+					`${resolvedName} joined editing.`,
+					"You can work together live.",
+					"waving_hand",
+					6000,
+					"subtle"
+				);
+				console.log(`[Quiz Editor] ${resolvedName} joined the room`);
+			}
+		}
+
+		// Check for users who left
+		for (const uid of previousUsers) {
+			if (!currentRemoteUsers.has(uid)) {
+				const resolvedName = userProfiles[uid]?.displayName || "Someone";
+				toast(`${resolvedName} stopped editing.`, "", "waving_hand", 6000, "subtle");
+				console.log(`[Quiz Editor] ${resolvedName} left the room`);
+			}
+		}
+
+		// Update the previous users tracker
+		previousUsers = new Set(currentRemoteUsers.keys());
+	});
+
+	// Mouse share & Focus tracking
 	function handleMouseMove(e: MouseEvent) {
 		if (loading) return;
 		room.updatePresence({
@@ -90,10 +176,19 @@
 		});
 	}
 
-	// Derived state for selected question
+	function handleFocus() {
+		if (loading) return;
+		room.updatePresence({ isFocused: true });
+	}
+
+	function handleBlur() {
+		if (loading) return;
+		room.updatePresence({ isFocused: false });
+	}
+
 	let activeQuestionData = $derived(questions.find((q) => q.id === activeQuestionId) || null);
 
-	// Broadcast current question focus whenever activeQuestionId changes
+	// Broadcast question selection
 	$effect(() => {
 		if (activeQuestionId !== null) {
 			room.updatePresence({ activeQuestionId });
@@ -121,6 +216,7 @@
 		});
 	});
 
+	// Login check
 	$effect(() => {
 		(async () => {
 			await whenAuthReady();
@@ -177,159 +273,160 @@
 	}
 </script>
 
-<!-- Global window mouse listener prevents a11y static element interaction warnings -->
-<svelte:window onmousemove={handleMouseMove} />
+<svelte:window onmousemove={handleMouseMove} onfocus={handleFocus} onblur={handleBlur} />
 
-<div style="width: 100%; height: 100vh; position: relative;">
-	<!-- Live Remote Mouse Cursors Layer (Only rendered if they are viewing the same question) -->
-	<div style="position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden;">
-		{#each activeUsersList as [clientId, clientState]}
-			{#if clientId !== room.doc.clientID && clientState?.cursor && clientState.activeQuestionId === activeQuestionId}
-				{@const userId = clientState.user?.userId}
-				{@const fetchedProfile = userId ? userProfiles[userId] : null}
-				{@const resolvedName =
-					fetchedProfile?.displayName || clientState.user?.name || "Collaborator"}
-				<div
-					style="
-                        position: absolute;
-                        left: {clientState.cursor.x}px;
-                        top: {clientState.cursor.y}px;
-                        transition: left 0.04s linear, top 0.04s linear;
-                        pointer-events: none;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: flex-start;
+<!-- Cursor Layer (Deduplicated based on user ID and focus) -->
+<div style="position: fixed; inset: 0; pointer-events: none; z-index: 5; overflow: hidden;">
+	{#each uniqueCursors as clientState}
+		{@const userId = clientState.user?.userId}
+		{@const fetchedProfile = userId ? userProfiles[userId] : null}
+		{@const resolvedName = fetchedProfile?.displayName || clientState.user?.name || "?"}
+
+		<div
+			style="
+                    position: absolute;
+                    left: {clientState.cursor.x}px;
+                    top: {clientState.cursor.y}px;
+                    transition: left 0.04s linear, top 0.04s linear;
+                    pointer-events: none;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                ">
+			<!-- Pointer SVG icon -->
+			<svg
+				width="24"
+				height="24"
+				viewBox="0 0 24 24"
+				fill={clientState.user?.color || "#3b82f6"}
+				stroke={token.theme.color.text.inverse}
+				style="transform-origin: 0px 0px; transform: rotate(-25deg); filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.3));">
+				<path
+					d="M5.5 3.21V20.8c-.05.45.45.72.8.43l3.78-3.15a1 1 0 0 1 .64-.23h6.05c.57 0 .81-.68.37-1.07L6.34 2.58c-.37-.33-.94-.06-.84.43z" />
+			</svg>
+
+			<!-- User Label Badge -->
+			<span
+				style="
+                        background-color: {clientState.user?.color || '#3b82f6'};
+                        color: white;
+                        font-size: 11px;
+                        font-weight: 600;
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        margin-left: 10px;
+                        margin-top: -6px;
+                        white-space: nowrap;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
                     ">
-					<!-- Pointer SVG icon -->
-					<svg
-						width="24"
-						height="24"
-						viewBox="0 0 24 24"
-						fill={clientState.user?.color || "#3b82f6"}
-						stroke="white"
-						stroke-width="1.5"
-						style="transform: rotate(-45deg); transform-origin: top left;">
-						<path d="M3 3l7 18 3-7 7-3L3 3z" />
-					</svg>
+				{resolvedName}
+				{#if clientState.focusedField}
+					<span style="opacity: 0.85;">({clientState.focusedField})</span>
+				{/if}
+			</span>
+		</div>
+	{/each}
+</div>
 
-					<!-- User Label Badge -->
-					<span
-						style="
-                            background-color: {clientState.user?.color || '#3b82f6'};
-                            color: white;
-                            font-size: 11px;
-                            font-weight: 600;
-                            padding: 2px 6px;
-                            border-radius: 4px;
-                            margin-left: 10px;
-                            margin-top: -6px;
-                            white-space: nowrap;
-                            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                        ">
-						{resolvedName}
-						{#if clientState.focusedField}
-							<span style="opacity: 0.85;">({clientState.focusedField})</span>
-						{/if}
-					</span>
-				</div>
-			{/if}
-		{/each}
-	</div>
+<Flex direction="column">
+	<div class={styles.frostbar}>
+		{#if loading}
+			<Skeleton height="2rem" width="15rem" />
+		{:else}
+			<span class={styles.title}>{quizName} <VisuallyHidden>. quiz</VisuallyHidden></span>
+		{/if}
 
-	<!-- Main Interface -->
-	<Flex direction="column">
-		<div class={styles.frostbar}>
-			{#if loading}
-				<Skeleton height="2rem" width="15rem" />
+		<Flex width="fit-content" height="fit-content" gap="small" alignItems="center">
+			<div style="display: flex; align-items: center; margin-right: 8px;">
+				{#each uniqueProfiles as clientState}
+					{@const userId = clientState.user.userId}
+					{@const fetchedProfile = userProfiles[userId]}
+					{@const resolvedAvatar = fetchedProfile?.avatarUrl || clientState.user.avatarUrl || ""}
+					{@const resolvedName = fetchedProfile?.displayName || clientState.user.name || "User"}
+					<Avatar
+						src={resolvedAvatar}
+						size="medium"
+						alt={resolvedName}
+						href={`${PUBLIC_ACCOUNT_FRONTEND_URL}/profile/${userId}`}
+						opennewtab />
+				{/each}
+			</div>
+
+			{#if appState.isMobile}
+				<IconButton
+					onclick={() => {}}
+					icon="settings"
+					appearance="default"
+					disabled
+					{loading}
+					tip="Manage quiz" />
 			{:else}
-				<span class={styles.title}>{quizName} <VisuallyHidden>. quiz</VisuallyHidden></span>
-			{/if}
-
-			<Flex width="fit-content" height="fit-content" gap="small" alignItems="center">
-				<!-- Active Room Collaborators Avatars List -->
-				<div style="display: flex; align-items: center; margin-right: 8px;">
-					{#each activeUsersList as [clientId, clientState]}
-						{#if clientState?.user}
-							{@const userId = clientState.user.userId}
-							{@const fetchedProfile = userId ? userProfiles[userId] : null}
-							{@const resolvedAvatar =
-								fetchedProfile?.avatarUrl || clientState.user.avatarUrl || ""}
-							{@const resolvedName = fetchedProfile?.displayName || clientState.user.name || "User"}
-							<Avatar
-								src={resolvedAvatar}
-								size="medium"
-								alt={resolvedName}
-								href={userId ? `${PUBLIC_ACCOUNT_FRONTEND_URL}/profile/${userId}` : undefined}
-								opennewtab />
-						{/if}
-					{/each}
-				</div>
-
 				<Button appearance="default" disabled {loading}>Manage quiz</Button>
 				<Button appearance="default" disabled {loading}>Present quiz</Button>
-				<LinkButton appearance="success" href="/manage">Exit</LinkButton>
-			</Flex>
-		</div>
-
-		<Flex>
-			<MainSidebar
-				{questions}
-				{activeQuestionId}
-				{mainSidebarOpened}
-				activeUsers={room.activeUsers}
-				{userProfiles}
-				currentClientId={room.doc.clientID}
-				onToggle={() => (mainSidebarOpened = !mainSidebarOpened)}
-				{loading}
-				onNewQuestion={() => (showNewQuestionModal = true)}
-				onSelectQuestion={(id) => (activeQuestionId = id)} />
-
-			{#if loading}
-				<LoadingQuestion />
-			{:else if activeQuestionData}
-				<MultipleChoice question={activeQuestionData} onUpdate={handleQuestionUpdate} />
 			{/if}
 
-			{#if activeQuestionId && activeQuestionData}
-				<QuestionSidebar
-					question={activeQuestionData}
-					{questionSidebarOpened}
-					{loading}
-					{openDropdown}
-					onToggle={() => (questionSidebarOpened = !questionSidebarOpened)}
-					onDropdownToggle={(name) => (openDropdown = name)}
-					onUpdate={handleQuestionUpdate}
-					onDelete={handleDeleteQuestion}
-					onDuplicate={handleDuplicateQuestion} />
-			{:else if !loading}
-				<Flex
-					justifyContent="center"
-					alignItems="center"
-					direction="column"
-					gap="medium"
-					text="center"
-					style="width: 100%;">
-					<Icon icon="comments_disabled" size="giant" />
-					<span
-						style="font-size: {token.global.font.size.xlarge}; font-weight: {token.global.font
-							.weight.medium}">
-						Welcome to quiz '{quizName}'.
-					</span>
-					<span>Let's start by creating a new question!</span>
-					<Button
-						appearance="discover"
-						iconbefore="add"
-						onclick={() => {
-							showNewQuestionModal = true;
-						}}>
-						Create new question
-					</Button>
-				</Flex>
-			{/if}
+			<LinkButton appearance="success" href="/manage">Exit</LinkButton>
 		</Flex>
+	</div>
 
-		{#if showNewQuestionModal}
-			<NewQuestionModal {handleNewQuestionSelection} />
+	<Flex>
+		<MainSidebar
+			{questions}
+			{activeQuestionId}
+			{mainSidebarOpened}
+			activeUsers={room.activeUsers}
+			{userProfiles}
+			currentClientId={room.doc.clientID}
+			onToggle={() => (mainSidebarOpened = !mainSidebarOpened)}
+			{loading}
+			onNewQuestion={() => (showNewQuestionModal = true)}
+			onSelectQuestion={(id) => (activeQuestionId = id)} />
+
+		{#if loading}
+			<LoadingQuestion />
+		{:else if activeQuestionData}
+			<MultipleChoice question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+		{/if}
+
+		{#if activeQuestionId && activeQuestionData}
+			<QuestionSidebar
+				question={activeQuestionData}
+				{questionSidebarOpened}
+				{loading}
+				{openDropdown}
+				onToggle={() => (questionSidebarOpened = !questionSidebarOpened)}
+				onDropdownToggle={(name) => (openDropdown = name)}
+				onUpdate={handleQuestionUpdate}
+				onDelete={handleDeleteQuestion}
+				onDuplicate={handleDuplicateQuestion} />
+		{:else if !loading}
+			<Flex
+				justifyContent="center"
+				alignItems="center"
+				direction="column"
+				gap="medium"
+				text="center"
+				style="width: 100%;">
+				<Icon icon="comments_disabled" size="giant" />
+				<span
+					style="font-size: {token.global.font.size.xlarge}; font-weight: {token.global.font.weight
+						.medium}">
+					Welcome to quiz '{quizName}'.
+				</span>
+				<span>Let's start by creating a new question!</span>
+				<Button
+					appearance="discover"
+					iconbefore="add"
+					onclick={() => {
+						showNewQuestionModal = true;
+					}}>
+					Create new question
+				</Button>
+			</Flex>
 		{/if}
 	</Flex>
-</div>
+
+	{#if showNewQuestionModal}
+		<NewQuestionModal {handleNewQuestionSelection} />
+	{/if}
+</Flex>

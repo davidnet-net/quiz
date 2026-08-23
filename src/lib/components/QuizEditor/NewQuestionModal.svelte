@@ -99,6 +99,7 @@
 </script>
 
 <Modal title="Choose question type" onclose={handleNewQuestionSelection}>
+	<span style="color: red;">Alleen MULTIPLE CHOICE (QUIZ) is momenteel ondersteund!</span>
 	<Flex flexWrap="wrap" gap="medium" justifyContent="center" overflowY="scroll">
 		{#each questionTypes as type}
 			<button

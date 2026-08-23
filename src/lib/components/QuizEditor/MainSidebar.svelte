@@ -43,9 +43,7 @@
 
 	let activeUsersList = $derived([...activeUsers.entries()]);
 
-	// Helper function to check if a question is invalid
 	function isQuestionInvalid(q: Question): boolean {
-		// 1. Check if the question text/title is empty
 		if (!q.text || q.text.trim() === "") {
 			return true;
 		}
@@ -53,12 +51,12 @@
 		const options = Array.isArray(q.options) ? q.options : [];
 		const correctCount = options.filter((opt) => opt.isCorrect).length;
 
-		// 2. Single select mode requires EXACTLY 1 correct answer
+		// Single select mode requires EXACTLY 1 correct answer
 		if (!q.isMultiSelect && correctCount !== 1) {
 			return true;
 		}
 
-		// 3. Multi select mode requires AT LEAST 2 correct answers
+		// Multi select mode requires AT LEAST 2 correct answers
 		if (q.isMultiSelect && correctCount < 2) {
 			return true;
 		}
@@ -129,38 +127,29 @@
 							? 'border-color: rgb(239, 68, 68) !important; box-shadow: 0 0 0 1px rgb(239, 68, 68);'
 							: ''}"
 						onclick={() => onSelectQuestion(q.id)}>
-						<Flex direction="row" justifyContent="between" alignItems="center" style="width: 100%;">
+						<Flex direction="row" justifyContent="between" height="fit-content">
 							<span class={styles.questionCardText}>Question {index + 1}</span>
 
-							<!-- Active Viewers Avatars Inside Question Card -->
 							{#if usersOnThisQuestion.length > 0}
 								<div style="display: flex; align-items: center; pointer-events: none;">
 									{#each usersOnThisQuestion as [clientId, clientState]}
 										{@const userId = clientState.user.userId}
 										{@const fetchedProfile = userId ? userProfiles[userId] : null}
 										{@const resolvedAvatar =
-											fetchedProfile?.avatarUrl || clientState.user.avatarUrl || ""}
+											fetchedProfile?.avatarUrl || clientState.user.avatarUrl || null}
 										{@const resolvedName =
-											fetchedProfile?.displayName || clientState.user.name || "User"}
-										<div
-											title="{resolvedName} is viewing this question"
-											style="
-                                                margin-left: -6px;
-                                                border: 2px solid rgba(0,0,0,0.3);
-                                                border-radius: 50%;
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                                background-color: {clientState.user.color ||
-												'#3b82f6'};
-                                            ">
-											<Avatar src={resolvedAvatar} size="small" alt={resolvedName} />
-										</div>
+											fetchedProfile?.displayName || clientState.user.name || "?"}
+
+										<Avatar
+											src={resolvedAvatar}
+											size="medium"
+											alt={resolvedName}
+											loading={!resolvedAvatar} />
 									{/each}
 								</div>
 							{/if}
 						</Flex>
-						<p class={styles.questionCardTitle}>{q.text || "Empty question..."}</p>
+						<p class={styles.questionCardTitle}>{q.text || "Empty question."}</p>
 					</button>
 				{/each}
 			{/if}
