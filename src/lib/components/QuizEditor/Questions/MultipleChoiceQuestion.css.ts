@@ -2,7 +2,7 @@ import { token } from "@davidnet-net/svelte-ui/tokens";
 import { style } from "@vanilla-extract/css";
 
 export const questionContainer = style({
-	height: "6rem",
+	minHeight: "6rem", // Changed from fixed height to minHeight so it expands when text wraps
 	width: "95%",
 	backgroundColor: token.theme.color.surface.raised.normal,
 	borderRadius: token.global.radius.huge,
@@ -10,12 +10,17 @@ export const questionContainer = style({
 	justifyContent: "center",
 	alignItems: "center",
 	textAlign: "center",
-	flexDirection: "column"
+	flexDirection: "column",
+	padding: "1rem",
+	boxSizing: "border-box"
 });
 
 export const question = style({
 	fontSize: token.global.font.size.large,
-	fontWeight: token.global.font.weight.medium
+	fontWeight: token.global.font.weight.medium,
+	wordBreak: "break-word",
+	overflowWrap: "break-word",
+	width: "100%"
 });
 
 export const imageContainer = style({
@@ -32,7 +37,7 @@ export const answerRow = style({
 	display: "flex",
 	width: "100%",
 	justifyContent: "center",
-	alignItems: "center",
+	alignItems: "stretch", // Ensures boxes in the same row match heights if text wraps differently
 	gap: token.global.spacing.medium
 });
 
@@ -45,12 +50,14 @@ export const answerContainer = style({
 
 export const answerBox = style({
 	width: "45%",
-	height: "10rem",
+	minHeight: "10rem", // Changed from fixed height to minHeight for multi-line support
 	color: token.theme.color.text.default,
 	borderRadius: token.global.radius.large,
 	display: "flex",
-	alignItems: "center",
-	justifyContent: "center",
+	alignItems: "flex-start",
+	padding: "1rem",
+	gap: "0.75rem",
+	boxSizing: "border-box",
 	border: "none",
 	fontSize: token.global.font.size.large,
 	fontWeight: token.global.font.weight.medium,

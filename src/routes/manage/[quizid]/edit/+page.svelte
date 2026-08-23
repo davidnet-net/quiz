@@ -88,11 +88,39 @@
 			id: newId,
 			type: questiontype,
 			title: "New Question",
-			text: ""
+			text: "",
+			timeLimit: 20,
+			pointsMultiplier: 1
 		});
 
 		// Immediately focus the new question
 		activeQuestionId = newId;
+	}
+
+	// Helper for Sidebar Updates
+	function handleQuestionUpdate(updates: Record<string, any>) {
+		if (activeQuestionId !== null) {
+			room.updateQuestion(activeQuestionId, updates);
+		}
+	}
+
+	// Helper for Deleting Questions
+	function handleDeleteQuestion() {
+		if (activeQuestionId !== null) {
+			room.deleteQuestion(activeQuestionId);
+			activeQuestionId = null; // Unselect the active question
+		}
+	}
+
+	// Helper for Duplicating Questions
+	function handleDuplicateQuestion() {
+		if (activeQuestionData) {
+			const newId = crypto.randomUUID();
+			// Copy data but generate a fresh UUID
+			const duplicatedQuestion = { ...activeQuestionData, id: newId };
+			room.addQuestion(duplicatedQuestion);
+			activeQuestionId = newId; // Jump to the duplicate
+		}
 	}
 </script>
 
@@ -124,29 +152,28 @@
 			<LoadingQuestion />
 		{:else if activeQuestionData}
 			<!-- Pass down the current question data AND the update method -->
-			<MultipleChoice
-				question={activeQuestionData}
-				onUpdate={(updates) => {
-					if (activeQuestionId !== null) {
-						room.updateQuestion(activeQuestionId, updates);
-					}
-				}} />
+			<MultipleChoice question={activeQuestionData} onUpdate={handleQuestionUpdate} />
 		{/if}
 
-		{#if activeQuestionId}
+		{#if activeQuestionId && activeQuestionData}
 			<QuestionSidebar
+				question={activeQuestionData}
 				{questionSidebarOpened}
 				{loading}
 				{openDropdown}
 				onToggle={() => (questionSidebarOpened = !questionSidebarOpened)}
-				onDropdownToggle={(name) => (openDropdown = name)} />
-		{:else}
+				onDropdownToggle={(name) => (openDropdown = name)}
+				onUpdate={handleQuestionUpdate}
+				onDelete={handleDeleteQuestion}
+				onDuplicate={handleDuplicateQuestion} />
+		{:else if !loading}
 			<Flex
 				justifyContent="center"
 				alignItems="center"
 				direction="column"
 				gap="medium"
-				text="center">
+				text="center"
+				style="width: 100%;">
 				<Icon icon="comments_disabled" size="giant" />
 				<span
 					style="font-size: {token.global.font.size.xlarge}; font-weight: {token.global.font.weight
