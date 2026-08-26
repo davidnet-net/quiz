@@ -4,6 +4,7 @@ import { PUBLIC_BACKEND_URL } from "$env/static/public";
 import { goto } from "$app/navigation";
 import { error } from "@sveltejs/kit";
 
+// Todo make this chooseable inside preferences!
 const USER_COLORS = [
 	"#f43f5e",
 	"#ec4899",

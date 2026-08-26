@@ -67,7 +67,9 @@
 
 {#if !mainSidebarOpened}
 	<div class={styles.compactSidebar}>
-		<Flex direction="column" gap="small" overflowY="scroll" style="padding: 0.2rem !important;">
+		<!-- Swapped to div with min-height: 0 to force flex overflow handling natively -->
+		<div
+			style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding: 0.2rem; flex: 1; min-height: 0;">
 			{#if loading}
 				<Skeleton height="2rem" width="2rem" />
 				<Skeleton height="2rem" width="2rem" />
@@ -86,11 +88,12 @@
 					</Button>
 				{/each}
 			{/if}
-		</Flex>
+		</div>
 		<Flex
 			height="fit-content"
 			gap="small"
 			direction="column"
+			marginTop="xsmall"
 			justifyContent="center"
 			alignItems="center">
 			<IconButton
@@ -104,7 +107,8 @@
 	</div>
 {:else}
 	<div class={styles.sidebar}>
-		<Flex direction="column" gap="small" overflowY="scroll">
+		<div
+			style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; min-height: 0;">
 			{#if loading}
 				<Skeleton height="4rem" width="100%" />
 				<Skeleton height="4rem" width="100%" />
@@ -113,12 +117,24 @@
 			{:else}
 				{#each questions as q, index}
 					{@const invalid = isQuestionInvalid(q)}
-					{@const usersOnThisQuestion = activeUsersList.filter(
-						([clientId, clientState]) =>
-							clientId !== currentClientId &&
-							clientState?.activeQuestionId === q.id &&
-							clientState?.user
+
+					<!-- Deduplicate users to ensure nobody shows up twice on the same question card -->
+					{@const usersOnThisQuestion = Array.from(
+						new Map(
+							activeUsersList
+								.filter(
+									([clientId, clientState]) =>
+										clientId !== currentClientId &&
+										clientState?.activeQuestionId === q.id &&
+										clientState?.user
+								)
+								.map(([clientId, clientState]) => [
+									clientState.user.userId || clientId, // Deduplicate by User ID, fallback to Client ID
+									[clientId, clientState]
+								])
+						).values()
 					)}
+
 					<button
 						class={styles.questionCardItem}
 						style="{activeQuestionId === q.id
@@ -153,8 +169,8 @@
 					</button>
 				{/each}
 			{/if}
-		</Flex>
-		<Flex justifyContent="end" height="fit-content" gap="small">
+		</div>
+		<Flex justifyContent="end" height="fit-content" gap="small" marginTop="small">
 			<Button
 				iconbefore="add"
 				appearance="primary"

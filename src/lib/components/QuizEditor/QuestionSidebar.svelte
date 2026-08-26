@@ -60,7 +60,9 @@
 
 {#if !questionSidebarOpened}
 	<div class={styles.compactSidebar}>
-		<Flex direction="column" gap="small" alignItems="center">
+		<!-- Swapped to native div to secure scrolling geometry -->
+		<div
+			style="display: flex; flex-direction: column; gap: 8px; align-items: center; flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 8px;">
 			<Dropdown isOpen={openDropdown === "compact-time-limit"}>
 				{#snippet trigger()}
 					<IconButton
@@ -187,12 +189,13 @@
 				appearance="default"
 				tip="Delete question"
 				onclick={onDelete} />
-		</Flex>
+		</div>
 		<IconButton icon="right_panel_open" tip="Open sidebar" onclick={onToggle} />
 	</div>
 {:else}
 	<div class={styles.sidebar}>
-		<Flex direction="column" gap="small" alignItems="start" style="width: 100%;">
+		<div
+			style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start; width: 100%; flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 8px;">
 			<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">
 				<Icon icon="schedule" />
 				<span>Time limit</span>
@@ -327,7 +330,7 @@
 			<Button {loading} alignContent="left" stretchwidth appearance="default" onclick={onDelete}>
 				Delete question
 			</Button>
-		</Flex>
+		</div>
 		<div>
 			<IconButton icon="right_panel_close" tip="Close sidebar" onclick={onToggle} />
 		</div>

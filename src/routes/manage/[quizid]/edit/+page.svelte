@@ -28,6 +28,7 @@
 	import { QuizRoom } from "$lib/quizEditor/QuizRoom.svelte";
 	import { page } from "$app/state";
 	import { PUBLIC_ACCOUNT_FRONTEND_URL, PUBLIC_BACKEND_URL } from "$env/static/public";
+	import TrueOrFalse from "$lib/components/QuizEditor/Questions/TrueOrFalse.svelte";
 
 	let { params }: PageProps = $props();
 
@@ -36,12 +37,9 @@
 	let openDropdown = $state<string | null>(null);
 	let showNewQuestionModal = $state(false);
 
-	// Profile cache for active room users fetched via your profile API
 	let userProfiles = $state<Record<string, any>>({});
-	// Prevent duplicate API fetches in the reactive effect
 	const fetchingProfiles = new Set<string>();
 
-	// 1. Initialize Room & Bind state
 	const room = QuizRoom(() => (authState.isLoggedIn ? params.quizid : ""));
 	let loading = $derived(room.loading || !authState.isLoggedIn);
 	let questions = $derived(room.questions);
@@ -49,10 +47,8 @@
 
 	let activeQuestionId = $state<number | string | null>(null);
 
-	// 2. Room Presence & Active Collaborators List
 	let activeUsersList = $derived([...room.activeUsers.entries()]);
 
-	// 3. Deduplicated Data for UI
 	let uniqueCursors = $derived(
 		Object.values(
 			activeUsersList.reduce(
@@ -86,7 +82,6 @@
 		)
 	);
 
-	// Sync authenticated user's profile details into awareness state
 	$effect(() => {
 		if (identityState.user) {
 			room.updatePresence({
@@ -101,12 +96,11 @@
 		}
 	});
 
-	// Fetch profile data safely with a Set to prevent race-condition dupes
 	$effect(() => {
 		for (const [clientId, clientState] of activeUsersList) {
 			const userId = clientState?.user?.userId;
 			if (userId && !userProfiles[userId] && !fetchingProfiles.has(userId)) {
-				fetchingProfiles.add(userId); // Mark as fetching
+				fetchingProfiles.add(userId);
 				(async () => {
 					try {
 						const profileResult = await getFetch(
@@ -121,14 +115,13 @@
 					} catch (err) {
 						console.error("[Quiz Editor] Failed to fetch profile:", err);
 					} finally {
-						fetchingProfiles.delete(userId); // Clean up set in case of retry logic later
+						fetchingProfiles.delete(userId);
 					}
 				})();
 			}
 		}
 	});
 
-	// 4. Track Join/Leave Events for Toasts
 	let previousUsers = new Set<string>();
 	let hasInitializedPresence = false;
 
@@ -168,7 +161,6 @@
 		previousUsers = new Set(currentRemoteUsers.keys());
 	});
 
-	// Mouse share & Focus tracking
 	function handleMouseMove(e: MouseEvent) {
 		if (loading) return;
 		room.updatePresence({
@@ -272,7 +264,7 @@
 
 <svelte:window onmousemove={handleMouseMove} onfocus={handleFocus} onblur={handleBlur} />
 
-<!-- Cursor Layer (Deduplicated based on user ID and focus) -->
+<!-- Cursor Layer -->
 <div style="position: fixed; inset: 0; pointer-events: none; z-index: 5; overflow: hidden;">
 	{#each uniqueCursors as clientState}
 		{@const userId = clientState.user?.userId}
@@ -323,7 +315,8 @@
 	{/each}
 </div>
 
-<Flex direction="column">
+<div
+	style="display: flex; flex-direction: column; height: calc(100dvh - 48px); max-height: calc(100dvh - 48px); width: 100%; overflow: hidden;">
 	<div class={styles.frostbar}>
 		{#if loading}
 			<Skeleton height="2rem" width="15rem" />
@@ -364,7 +357,10 @@
 		</Flex>
 	</div>
 
-	<Flex>
+	<!-- MAIN WORKSPACE ROW -->
+	<div
+		style="display: flex; flex-direction: row; flex: 1; min-height: 0; width: 100%; overflow: hidden;">
+		<!-- Left Sidebar (Stays perfectly pinned) -->
 		<MainSidebar
 			{questions}
 			{activeQuestionId}
@@ -377,12 +373,59 @@
 			onNewQuestion={() => (showNewQuestionModal = true)}
 			onSelectQuestion={(id) => (activeQuestionId = id)} />
 
-		{#if loading}
-			<LoadingQuestion />
-		{:else if activeQuestionData}
-			<MultipleChoice question={activeQuestionData} onUpdate={handleQuestionUpdate} />
-		{/if}
+		<!-- CENTER AREA: This is the ONLY element that gets to scroll -->
+		<div
+			style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; position: relative;">
+			{#if loading}
+				<LoadingQuestion />
+			{:else if activeQuestionData}
+				{#if activeQuestionData.type === "true_false"}
+					<TrueOrFalse question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+				{:else if activeQuestionData.type === "quiz"}
+					<MultipleChoice question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+				{:else}
+					<Flex
+						justifyContent="center"
+						alignItems="center"
+						text="center"
+						direction="column"
+						gap="medium">
+						<Icon icon="sentiment_sad" size="giant" />
+						<span
+							style="font-size: {token.global.font.size.large}; font-weight: {token.global.font
+								.weight.bold}">
+							This question type is not yet supported!
+						</span>
+					</Flex>
+				{/if}
+			{:else}
+				<Flex
+					justifyContent="center"
+					alignItems="center"
+					direction="column"
+					gap="medium"
+					text="center"
+					style="width: 100%; height: 100%; flex: 1;">
+					<Icon icon="comments_disabled" size="giant" />
+					<span
+						style="font-size: {token.global.font.size.xlarge}; font-weight: {token.global.font
+							.weight.medium}">
+						Welcome to quiz '{quizName}'.
+					</span>
+					<span>Let's start by creating a new question!</span>
+					<Button
+						appearance="discover"
+						iconbefore="add"
+						onclick={() => {
+							showNewQuestionModal = true;
+						}}>
+						Create new question
+					</Button>
+				</Flex>
+			{/if}
+		</div>
 
+		<!-- Right Sidebar (Stays perfectly pinned) -->
 		{#if activeQuestionId && activeQuestionData}
 			<QuestionSidebar
 				question={activeQuestionData}
@@ -394,34 +437,10 @@
 				onUpdate={handleQuestionUpdate}
 				onDelete={handleDeleteQuestion}
 				onDuplicate={handleDuplicateQuestion} />
-		{:else if !loading}
-			<Flex
-				justifyContent="center"
-				alignItems="center"
-				direction="column"
-				gap="medium"
-				text="center"
-				style="width: 100%;">
-				<Icon icon="comments_disabled" size="giant" />
-				<span
-					style="font-size: {token.global.font.size.xlarge}; font-weight: {token.global.font.weight
-						.medium}">
-					Welcome to quiz '{quizName}'.
-				</span>
-				<span>Let's start by creating a new question!</span>
-				<Button
-					appearance="discover"
-					iconbefore="add"
-					onclick={() => {
-						showNewQuestionModal = true;
-					}}>
-					Create new question
-				</Button>
-			</Flex>
 		{/if}
-	</Flex>
+	</div>
 
 	{#if showNewQuestionModal}
 		<NewQuestionModal {handleNewQuestionSelection} />
 	{/if}
-</Flex>
+</div>

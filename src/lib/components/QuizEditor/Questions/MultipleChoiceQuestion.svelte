@@ -73,7 +73,13 @@
 	}
 </script>
 
-<Flex direction="column" padding="medium" alignItems="center" gap="medium" style="width: 100%;">
+<Flex
+	direction="column"
+	padding="medium"
+	alignItems="center"
+	gap="medium"
+	justifyContent="spaceAround"
+	style="width: 100%;">
 	<div class={styles.questionContainer}>
 		<Field label="Question" name="question" overidelabel style="width: 100%;">
 			<TextArea
