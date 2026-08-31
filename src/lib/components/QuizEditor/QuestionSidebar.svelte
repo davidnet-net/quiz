@@ -24,31 +24,31 @@
 		onDuplicate: () => void;
 	} = $props();
 
-	// Derived states for UI display
 	let timeLimitDisplay = $derived(
 		question?.timeLimit ? `${question.timeLimit} seconds` : "20 seconds"
 	);
 	let pointsDisplay = $derived(question?.pointsMultiplier === 2 ? "Double points" : "Standard");
 	let answerOptionsDisplay = $derived(question?.isMultiSelect ? "Multi select" : "Single select");
 
-	// Helper function to safely switch to single select and uncheck extra correct answers
+	/**
+	 * Reverts question format to single-select, ensuring only the first
+	 * marked correct answer remains selected.
+	 */
 	function setSingleSelect() {
 		const currentOptions = Array.isArray(question?.options) ? question.options : [];
 		let firstCorrectFound = false;
 
-		// Map over options: keep the first one that is correct, uncheck the rest
 		const sanitizedOptions = currentOptions.map((opt: any) => {
 			if (opt.isCorrect) {
 				if (!firstCorrectFound) {
 					firstCorrectFound = true;
 					return { ...opt };
 				}
-				return { ...opt, isCorrect: false }; // Uncheck extra correct answers
+				return { ...opt, isCorrect: false };
 			}
 			return { ...opt };
 		});
 
-		// Save both the toggle state AND the cleaned-up options simultaneously
 		onUpdate({
 			isMultiSelect: false,
 			options: sanitizedOptions
@@ -60,7 +60,6 @@
 
 {#if !questionSidebarOpened}
 	<div class={styles.compactSidebar}>
-		<!-- Swapped to native div to secure scrolling geometry -->
 		<div
 			style="display: flex; flex-direction: column; gap: 8px; align-items: center; flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 8px;">
 			<Dropdown isOpen={openDropdown === "compact-time-limit"}>
@@ -75,46 +74,18 @@
 								openDropdown === "compact-time-limit" ? null : "compact-time-limit"
 							)} />
 				{/snippet}
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ timeLimit: 10 });
-						onDropdownToggle(null);
-					}}>
-					10 seconds
-				</Button>
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ timeLimit: 20 });
-						onDropdownToggle(null);
-					}}>
-					20 seconds
-				</Button>
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ timeLimit: 30 });
-						onDropdownToggle(null);
-					}}>
-					30 seconds
-				</Button>
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ timeLimit: 60 });
-						onDropdownToggle(null);
-					}}>
-					60 seconds
-				</Button>
+				{#each [10, 20, 30, 60] as time}
+					<Button
+						{loading}
+						appearance="subtle"
+						alignContent="left"
+						onclick={() => {
+							onUpdate({ timeLimit: time });
+							onDropdownToggle(null);
+						}}>
+						{time} seconds
+					</Button>
+				{/each}
 			</Dropdown>
 
 			<Dropdown isOpen={openDropdown === "compact-points"}>
@@ -127,26 +98,18 @@
 						onclick={() =>
 							onDropdownToggle(openDropdown === "compact-points" ? null : "compact-points")} />
 				{/snippet}
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ pointsMultiplier: 1 });
-						onDropdownToggle(null);
-					}}>
-					Standard
-				</Button>
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ pointsMultiplier: 2 });
-						onDropdownToggle(null);
-					}}>
-					Double points
-				</Button>
+				{#each [{ label: "Standard", value: 1 }, { label: "Double points", value: 2 }] as point}
+					<Button
+						{loading}
+						appearance="subtle"
+						alignContent="left"
+						onclick={() => {
+							onUpdate({ pointsMultiplier: point.value });
+							onDropdownToggle(null);
+						}}>
+						{point.label}
+					</Button>
+				{/each}
 			</Dropdown>
 
 			<Dropdown isOpen={openDropdown === "compact-answer-options"}>
@@ -211,46 +174,18 @@
 						{timeLimitDisplay}
 					</Button>
 				{/snippet}
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ timeLimit: 10 });
-						onDropdownToggle(null);
-					}}>
-					10 seconds
-				</Button>
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ timeLimit: 20 });
-						onDropdownToggle(null);
-					}}>
-					20 seconds
-				</Button>
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ timeLimit: 30 });
-						onDropdownToggle(null);
-					}}>
-					30 seconds
-				</Button>
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ timeLimit: 60 });
-						onDropdownToggle(null);
-					}}>
-					60 seconds
-				</Button>
+				{#each [10, 20, 30, 60] as time}
+					<Button
+						{loading}
+						appearance="subtle"
+						alignContent="left"
+						onclick={() => {
+							onUpdate({ timeLimit: time });
+							onDropdownToggle(null);
+						}}>
+						{time} seconds
+					</Button>
+				{/each}
 			</Dropdown>
 
 			<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">
@@ -268,26 +203,18 @@
 						{pointsDisplay}
 					</Button>
 				{/snippet}
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ pointsMultiplier: 1 });
-						onDropdownToggle(null);
-					}}>
-					Standard
-				</Button>
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ pointsMultiplier: 2 });
-						onDropdownToggle(null);
-					}}>
-					Double points
-				</Button>
+				{#each [{ label: "Standard", value: 1 }, { label: "Double points", value: 2 }] as point}
+					<Button
+						{loading}
+						appearance="subtle"
+						alignContent="left"
+						onclick={() => {
+							onUpdate({ pointsMultiplier: point.value });
+							onDropdownToggle(null);
+						}}>
+						{point.label}
+					</Button>
+				{/each}
 			</Dropdown>
 
 			<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">

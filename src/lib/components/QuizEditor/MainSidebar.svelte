@@ -3,14 +3,21 @@
 	import * as styles from "./Sidebar.css.ts";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 
+	/**
+	 * Represents a single answer option for a question.
+	 */
 	interface Option {
 		id: string;
 		text: string;
 		isCorrect: boolean;
 	}
 
+	/**
+	 * Represents a quiz question payload.
+	 */
 	interface Question {
 		id: string | number;
+		type?: string;
 		title?: string;
 		text: string;
 		isMultiSelect?: boolean;
@@ -43,22 +50,51 @@
 
 	let activeUsersList = $derived([...activeUsers.entries()]);
 
+	/**
+	 * Validates a question's data integrity. Checks for supported types,
+	 * character length boundaries, missing text, and valid correct-answer counts.
+	 * Allows empty options as long as >= 2 options are filled.
+	 *
+	 * @param q - The Question object to evaluate.
+	 * @returns True if the question has validation errors, false otherwise.
+	 */
 	function isQuestionInvalid(q: Question): boolean {
-		if (!q.text || q.text.trim() === "") {
+		const SUPPORTED_TYPES = ["quiz", "true_false"];
+
+		if (!q.type || !SUPPORTED_TYPES.includes(q.type)) {
+			return true;
+		}
+
+		const questionText = q.text?.trim() || "";
+		if (!questionText || questionText.length > 250) {
 			return true;
 		}
 
 		const options = Array.isArray(q.options) ? q.options : [];
-		const correctCount = options.filter((opt) => opt.isCorrect).length;
 
-		// Single select mode requires EXACTLY 1 correct answer
-		if (!q.isMultiSelect && correctCount !== 1) {
-			return true;
+		if (q.type === "true_false") {
+			const correctCount = options.filter((opt) => opt.isCorrect).length;
+			return options.length !== 2 || correctCount !== 1;
 		}
 
-		// Multi select mode requires AT LEAST 2 correct answers
-		if (q.isMultiSelect && correctCount < 2) {
-			return true;
+		if (q.type === "quiz") {
+			// Isolate only the options that the user has actually typed into
+			const filledOptions = options.filter((opt) => {
+				const text = opt.text?.trim() || "";
+				return text.length > 0;
+			});
+
+			// Must have at least 2 filled answers
+			if (filledOptions.length < 2) return true;
+
+			// Check if any filled option exceeds the character limit
+			if (filledOptions.some((opt) => opt.text.trim().length > 100)) return true;
+
+			const correctCount = filledOptions.filter((opt) => opt.isCorrect).length;
+
+			// Validate correct answer constraints based on select mode
+			if (!q.isMultiSelect && correctCount !== 1) return true;
+			if (q.isMultiSelect && correctCount < 2) return true;
 		}
 
 		return false;
@@ -67,14 +103,12 @@
 
 {#if !mainSidebarOpened}
 	<div class={styles.compactSidebar}>
-		<!-- Swapped to div with min-height: 0 to force flex overflow handling natively -->
 		<div
 			style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding: 0.2rem; flex: 1; min-height: 0;">
 			{#if loading}
-				<Skeleton height="2rem" width="2rem" />
-				<Skeleton height="2rem" width="2rem" />
-				<Skeleton height="2rem" width="2rem" />
-				<Skeleton height="2rem" width="2rem" />
+				{#each Array(4) as _}
+					<Skeleton height="2rem" width="2rem" />
+				{/each}
 			{:else}
 				{#each questions as q, index}
 					{@const invalid = isQuestionInvalid(q)}
@@ -110,15 +144,12 @@
 		<div
 			style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; min-height: 0;">
 			{#if loading}
-				<Skeleton height="4rem" width="100%" />
-				<Skeleton height="4rem" width="100%" />
-				<Skeleton height="4rem" width="100%" />
-				<Skeleton height="4rem" width="100%" />
+				{#each Array(4) as _}
+					<Skeleton height="4rem" width="100%" />
+				{/each}
 			{:else}
 				{#each questions as q, index}
 					{@const invalid = isQuestionInvalid(q)}
-
-					<!-- Deduplicate users to ensure nobody shows up twice on the same question card -->
 					{@const usersOnThisQuestion = Array.from(
 						new Map(
 							activeUsersList
@@ -129,7 +160,7 @@
 										clientState?.user
 								)
 								.map(([clientId, clientState]) => [
-									clientState.user.userId || clientId, // Deduplicate by User ID, fallback to Client ID
+									clientState.user.userId || clientId,
 									[clientId, clientState]
 								])
 						).values()

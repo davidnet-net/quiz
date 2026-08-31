@@ -49,17 +49,17 @@
 
 	let isMultiSelect = $derived(!!question?.isMultiSelect);
 
+	/**
+	 * Updates an option payload and handles logical deselects for single-select mode.
+	 */
 	function updateOption(index: number, updates: Record<string, any>) {
 		const newOptions = [...options];
-
-		// Block empty answers from being correct
 		const nextText = updates.text !== undefined ? updates.text : newOptions[index].text;
 
 		if (nextText.trim() === "") {
 			updates.isCorrect = false;
 		}
 
-		// Handle single-select / multi-select logic
 		if (updates.isCorrect && !isMultiSelect) {
 			newOptions.forEach((opt, i) => {
 				newOptions[i] = { ...opt, isCorrect: i === index };
@@ -91,83 +91,48 @@
 				style="background: transparent; border: none; text-align: center; width: 100%; outline: none; color: inherit; font-family: inherit; font-size: inherit; resize: none; word-break: break-word; overflow-wrap: break-word;" />
 		</Field>
 	</div>
+
 	<div class={styles.imageContainer}></div>
 
 	<div class={styles.answerContainer}>
-		<!-- First Row (Options 0 and 1) -->
-		<div class={styles.answerRow}>
-			{#each [0, 1] as i}
-				<div
-					class={styles.answerBox}
-					style="background-color: {options[i].bg}; border: 1px solid {options[i]
-						.color}; padding: 1rem; box-sizing: border-box;">
-					<Field
-						label={`Answer ${i + 1}`}
-						name={`answer_${i}`}
-						overidelabel
-						style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
-						<div style="display: flex; align-items: flex-start; gap: 0.75rem; width: 100%;">
-							<div style="padding-top: 2px; flex-shrink: 0;">
-								<Checkbox
-									checked={options[i].isCorrect}
-									disabled={options[i].text.trim() === ""}
-									onchange={(e: Event) =>
-										updateOption(i, { isCorrect: (e.currentTarget as HTMLInputElement).checked })}
-									title={options[i].text.trim() === ""
-										? "Type an answer first"
-										: "Mark as correct answer"} />
+		{#each [[0, 1], [2, 3]] as rowIndices}
+			<div class={styles.answerRow}>
+				{#each rowIndices as i}
+					<div
+						class={styles.answerBox}
+						style="background-color: {options[i].bg}; border: 1px solid {options[i]
+							.color}; padding: 1rem; box-sizing: border-box;">
+						<Field
+							label={`Answer ${i + 1}`}
+							name={`answer_${i}`}
+							overidelabel
+							style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+							<div style="display: flex; align-items: flex-start; gap: 0.75rem; width: 100%;">
+								<div style="padding-top: 2px; flex-shrink: 0;">
+									<Checkbox
+										checked={options[i].isCorrect}
+										disabled={options[i].text.trim() === ""}
+										onchange={(e: Event) =>
+											updateOption(i, { isCorrect: (e.currentTarget as HTMLInputElement).checked })}
+										title={options[i].text.trim() === ""
+											? "Type an answer first"
+											: "Mark as correct answer"} />
+								</div>
+
+								<TextArea
+									value={options[i].text}
+									oninput={(e) =>
+										updateOption(i, { text: (e.target as HTMLTextAreaElement).value })}
+									placeholder={`Add answer ${i + 1}...`}
+									maxlength={100}
+									headless
+									maxRows={4}
+									style="background: transparent; border: none; outline: none; width: 100%; color: inherit; font-family: inherit; font-size: inherit; font-weight: inherit; resize: none; word-break: break-word; overflow-wrap: break-word;" />
 							</div>
-
-							<TextArea
-								value={options[i].text}
-								oninput={(e) => updateOption(i, { text: (e.target as HTMLTextAreaElement).value })}
-								placeholder={`Add answer ${i + 1}...`}
-								maxlength={100}
-								headless
-								maxRows={4}
-								style="background: transparent; border: none; outline: none; width: 100%; color: inherit; font-family: inherit; font-size: inherit; font-weight: inherit; resize: none; word-break: break-word; overflow-wrap: break-word;" />
-						</div>
-					</Field>
-				</div>
-			{/each}
-		</div>
-
-		<!-- Second Row (Options 2 and 3) -->
-		<div class={styles.answerRow}>
-			{#each [2, 3] as i}
-				<div
-					class={styles.answerBox}
-					style="background-color: {options[i].bg}; border: 1px solid {options[i]
-						.color}; padding: 1rem; box-sizing: border-box;">
-					<Field
-						label={`Answer ${i + 1}`}
-						name={`answer_${i}`}
-						overidelabel
-						style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
-						<div style="display: flex; align-items: flex-start; gap: 0.75rem; width: 100%;">
-							<div style="padding-top: 2px; flex-shrink: 0;">
-								<Checkbox
-									checked={options[i].isCorrect}
-									disabled={options[i].text.trim() === ""}
-									onchange={(e: Event) =>
-										updateOption(i, { isCorrect: (e.currentTarget as HTMLInputElement).checked })}
-									title={options[i].text.trim() === ""
-										? "Type an answer first"
-										: "Mark as correct answer"} />
-							</div>
-
-							<TextArea
-								value={options[i].text}
-								oninput={(e) => updateOption(i, { text: (e.target as HTMLTextAreaElement).value })}
-								placeholder={`Add answer ${i + 1}...`}
-								maxlength={100}
-								headless
-								maxRows={4}
-								style="background: transparent; border: none; outline: none; width: 100%; color: inherit; font-family: inherit; font-size: inherit; font-weight: inherit; resize: none; word-break: break-word; overflow-wrap: break-word;" />
-						</div>
-					</Field>
-				</div>
-			{/each}
-		</div>
+						</Field>
+					</div>
+				{/each}
+			</div>
+		{/each}
 	</div>
 </Flex>
