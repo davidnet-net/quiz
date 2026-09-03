@@ -389,7 +389,9 @@
 						}}>
 						Manage quiz
 					</Button>
-					<Button appearance="default" disabled {loading}>Present quiz</Button>
+					<LinkButton appearance="default" href={`/present/${params.quizid}`} {loading}>
+						Present quiz
+					</LinkButton>
 				{/if}
 			{/if}
 

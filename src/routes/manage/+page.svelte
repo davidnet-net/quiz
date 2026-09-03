@@ -324,7 +324,7 @@
 					</Flex>
 					<Flex justifyContent="end" height="fit-content" alignItems="center" gap="small">
 						<LinkButton href={`/manage/${quiz.id}/edit`}>Edit quiz</LinkButton>
-						<LinkButton href={`#`} appearance="primary" disabled>Present quiz</LinkButton>
+						<LinkButton href={`/present/${quiz.id}`} appearance="primary">Present quiz</LinkButton>
 					</Flex>
 				</div>
 			{/each}
