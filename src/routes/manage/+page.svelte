@@ -295,7 +295,8 @@
 									alignContent="left"
 									type="button"
 									appearance="subtle"
-									onclick={() => {
+									onclick={(e) => {
+										e.stopPropagation();
 										quizToRename = quiz;
 										quizRenameValue = quiz.name;
 										openQuizDropdownId = null;
@@ -309,7 +310,8 @@
 									alignContent="left"
 									type="button"
 									appearance="subtle"
-									onclick={() => {
+									onclick={(e) => {
+										e.stopPropagation();
 										quizToDelete = quiz;
 										openQuizDropdownId = null;
 									}}>
@@ -385,7 +387,8 @@
 								alignContent="left"
 								type="button"
 								appearance="subtle"
-								onclick={() => {
+								onclick={(e) => {
+									e.stopPropagation();
 									quizToStopCollab = quiz;
 									openQuizDropdownId = null;
 								}}>
