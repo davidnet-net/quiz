@@ -1,10 +1,10 @@
+// QuizRoom.svelte.ts
 import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
 import { PUBLIC_BACKEND_URL } from "$env/static/public";
 import { goto } from "$app/navigation";
 import { error } from "@sveltejs/kit";
 
-// Todo make this chooseable inside preferences!
 const USER_COLORS = [
 	"#f43f5e",
 	"#ec4899",
@@ -34,6 +34,8 @@ export function QuizRoom(getQuizId: () => string) {
 	const questionsArray = doc.getArray<Y.Map<any>>("questions");
 
 	let quizName = $state<string>("NAME");
+	let quizTeamId = $state<string | undefined>(undefined);
+	let quizWorkspaceId = $state<string | undefined>(undefined);
 	let questions = $state<any[]>([]);
 	let activeUsers = $state<Map<number, any>>(new Map());
 
@@ -113,7 +115,6 @@ export function QuizRoom(getQuizId: () => string) {
 				} else if (messageType === 1) {
 					awarenessProtocol.applyAwarenessUpdate(awareness, payload, "remote");
 				} else if (messageType === 2) {
-					// 2 = Ping from server, reply with 3 = Pong
 					ws.send(new Uint8Array([3]));
 				}
 			};
@@ -128,7 +129,6 @@ export function QuizRoom(getQuizId: () => string) {
 					throw error(404, "Quiz not found");
 				}
 
-				// Exponential backoff reconnect
 				loading = true;
 				const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
 				reconnectAttempts++;
@@ -136,7 +136,6 @@ export function QuizRoom(getQuizId: () => string) {
 				reconnectTimeout = setTimeout(connectWebSocket, delay);
 			};
 
-			// Bind doc and awareness updates specifically to THIS active websocket
 			const docUpdateHandler = (update: Uint8Array) => {
 				if (ws.readyState === WebSocket.OPEN) {
 					const message = new Uint8Array(1 + update.length);
@@ -161,7 +160,6 @@ export function QuizRoom(getQuizId: () => string) {
 			doc.on("update", docUpdateHandler);
 			awareness.on("update", awarenessUpdateHandler);
 
-			// Internal cleanup to unbind events when this specific WS closes
 			ws.addEventListener("close", () => {
 				doc.off("update", docUpdateHandler);
 				awareness.off("update", awarenessUpdateHandler);
@@ -170,6 +168,8 @@ export function QuizRoom(getQuizId: () => string) {
 
 		const syncState = () => {
 			quizName = quizMeta.get("name") || "Untitled Quiz";
+			quizTeamId = quizMeta.get("teamId") || undefined;
+			quizWorkspaceId = quizMeta.get("workspaceId") || undefined;
 			questions = questionsArray.toArray().map((qMap) => qMap.toJSON());
 		};
 
@@ -186,7 +186,6 @@ export function QuizRoom(getQuizId: () => string) {
 			isIntentionallyClosed = true;
 			clearTimeout(reconnectTimeout);
 			doc.off("update", syncState);
-			awareness.off("update", syncAwarenessState);
 			awareness.off("change", syncAwarenessState);
 			awarenessProtocol.removeAwarenessStates(awareness, [doc.clientID], "client closed");
 			if (socket) socket.close();
@@ -247,6 +246,12 @@ export function QuizRoom(getQuizId: () => string) {
 		},
 		get quizName() {
 			return quizName;
+		},
+		get quizTeamId() {
+			return quizTeamId;
+		},
+		get quizWorkspaceId() {
+			return quizWorkspaceId;
 		},
 		get questions() {
 			return questions;

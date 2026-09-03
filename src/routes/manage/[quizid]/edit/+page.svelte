@@ -1,3 +1,4 @@
+<!-- +page.svelte -->
 <script lang="ts">
 	import {
 		appState,
@@ -14,7 +15,9 @@
 		whenAuthReady,
 		getFetch,
 		toast,
-		IconButton
+		IconButton,
+		hasPermission,
+		syncWorkspaceAccess
 	} from "@davidnet-net/svelte-ui";
 	import * as styles from "./page.css.ts";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
@@ -29,6 +32,7 @@
 	import { page } from "$app/state";
 	import { PUBLIC_ACCOUNT_FRONTEND_URL, PUBLIC_BACKEND_URL } from "$env/static/public";
 	import TrueOrFalse from "$lib/components/QuizEditor/Questions/TrueOrFalse.svelte";
+	import QuizManager from "$lib/components/QuizEditor/QuizManager.svelte";
 
 	let { params }: PageProps = $props();
 
@@ -45,7 +49,25 @@
 	let questions = $derived(room.questions);
 	let quizName = $derived(room.quizName);
 
+	$effect(() => {
+		if (quizWorkspaceId) {
+			syncWorkspaceAccess(quizWorkspaceId);
+		}
+	});
+
+	let quizTeamId = $derived(room.quizTeamId);
+	let quizWorkspaceId = $derived(room.quizWorkspaceId);
+
+	let canManageQuiz = $derived(
+		quizWorkspaceId
+			? quizTeamId
+				? hasPermission("quiz:manage", quizTeamId, quizWorkspaceId)
+				: hasPermission("quiz:manage", undefined, quizWorkspaceId)
+			: false
+	);
+
 	let activeQuestionId = $state<number | string | null>(null);
+	let viewManageQuizModal = $state(false);
 
 	let activeUsersList = $derived([...room.activeUsers.entries()]);
 
@@ -260,6 +282,14 @@
 			activeQuestionId = newId;
 		}
 	}
+
+	function handleUpdateQuizName(newName: string) {
+		if (room?.doc) {
+			const quizMeta = room.doc.getMap("quizMeta");
+			quizMeta.set("name", newName);
+			toast("Updated!", "Quiz name updated successfully.", "check", 3000, "success");
+		}
+	}
 </script>
 
 <svelte:window onmousemove={handleMouseMove} onfocus={handleFocus} onblur={handleBlur} />
@@ -340,17 +370,27 @@
 				{/each}
 			</div>
 
-			{#if appState.isMobile}
-				<IconButton
-					onclick={() => {}}
-					icon="settings"
-					appearance="default"
-					disabled
-					{loading}
-					tip="Manage quiz" />
-			{:else}
-				<Button appearance="default" disabled {loading}>Manage quiz</Button>
-				<Button appearance="default" disabled {loading}>Present quiz</Button>
+			{#if canManageQuiz}
+				{#if appState.isMobile}
+					<IconButton
+						onclick={() => {
+							viewManageQuizModal = true;
+						}}
+						icon="settings"
+						appearance="default"
+						{loading}
+						tip="Manage quiz" />
+				{:else}
+					<Button
+						appearance="default"
+						{loading}
+						onclick={() => {
+							viewManageQuizModal = true;
+						}}>
+						Manage quiz
+					</Button>
+					<Button appearance="default" disabled {loading}>Present quiz</Button>
+				{/if}
 			{/if}
 
 			<LinkButton appearance="success" href="/manage">Exit</LinkButton>
@@ -442,5 +482,13 @@
 
 	{#if showNewQuestionModal}
 		<NewQuestionModal {handleNewQuestionSelection} />
+	{/if}
+
+	{#if viewManageQuizModal && canManageQuiz}
+		<QuizManager
+			{quizName}
+			quizId={params.quizid}
+			onUpdateName={handleUpdateQuizName}
+			onclose={() => (viewManageQuizModal = false)} />
 	{/if}
 </div>

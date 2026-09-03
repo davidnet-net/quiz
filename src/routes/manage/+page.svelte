@@ -537,7 +537,7 @@
 					loading={quizRenaming}
 					form="rename-quiz"
 					type="submit">
-					Save changes
+					Rename quiz
 				</Button>
 			{/snippet}
 		</Modal>
