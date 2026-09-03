@@ -13,7 +13,7 @@
 		Tab,
 		TabPanel
 	} from "@davidnet-net/svelte-ui";
-	import { getFetch, postFetch, deleteFetch } from "@davidnet-net/svelte-ui";
+	import { getFetch, postFetch, deleteFetch, patchFetch } from "@davidnet-net/svelte-ui";
 	import { PUBLIC_BACKEND_URL } from "$env/static/public";
 	import { onMount } from "svelte";
 
@@ -43,14 +43,26 @@
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
-		if (!isValid) return;
+		if (!isValid || !currentWorkspace?.id) return;
 
 		isSaving = true;
 		try {
-			onUpdateName(nameValue.trim());
-			toast("Updated!", "Quiz name updated successfully.", "check", 3000, "success");
+			const res = await patchFetch(
+				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}`,
+				{ name: nameValue.trim() },
+				undefined,
+				true
+			);
+
+			if (res && res.success) {
+				onUpdateName(nameValue.trim());
+				toast("Updated!", "Quiz name updated successfully.", "check", 3000, "success");
+			} else {
+				toast("Error", res?.error || "Failed to update quiz name.", "error", 4000, "danger");
+			}
 		} catch (err) {
 			console.error("Failed to update quiz name:", err);
+			toast("Error", "Failed to update quiz name.", "error", 4000, "danger");
 		} finally {
 			isSaving = false;
 		}
@@ -109,7 +121,7 @@
 	});
 
 	async function sendInvite() {
-		const username = newCollaboratorUsername.trim().replace(/^@/, "");
+		const username = newCollaboratorUsername.trim().replace(/^@/, "").toLowerCase();
 		if (!username || !currentWorkspace?.id) return;
 
 		addingCollaborator = true;
