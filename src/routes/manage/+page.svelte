@@ -295,11 +295,12 @@
 									alignContent="left"
 									type="button"
 									appearance="subtle"
-									onclick={(e) => {
-										e.stopPropagation();
-										quizToRename = quiz;
-										quizRenameValue = quiz.name;
+									onclick={() => {
 										openQuizDropdownId = null;
+										setTimeout(() => {
+											quizToRename = quiz;
+											quizRenameValue = quiz.name;
+										}, 0);
 									}}>
 									Rename quiz
 								</Button>
@@ -310,10 +311,11 @@
 									alignContent="left"
 									type="button"
 									appearance="subtle"
-									onclick={(e) => {
-										e.stopPropagation();
-										quizToDelete = quiz;
+									onclick={() => {
 										openQuizDropdownId = null;
+										setTimeout(() => {
+											quizToDelete = quiz;
+										}, 0);
 									}}>
 									Delete quiz
 								</Button>
@@ -324,7 +326,7 @@
 					</Flex>
 					<Flex justifyContent="end" height="fit-content" alignItems="center" gap="small">
 						<LinkButton href={`/manage/${quiz.id}/edit`}>Edit quiz</LinkButton>
-						<LinkButton href={`/present/${quiz.id}`} appearance="primary">Present quiz</LinkButton>
+						<LinkButton href={`#`} appearance="primary" disabled>Present quiz</LinkButton>
 					</Flex>
 				</div>
 			{/each}
@@ -387,10 +389,11 @@
 								alignContent="left"
 								type="button"
 								appearance="subtle"
-								onclick={(e) => {
-									e.stopPropagation();
-									quizToStopCollab = quiz;
+								onclick={() => {
 									openQuizDropdownId = null;
+									setTimeout(() => {
+										quizToStopCollab = quiz;
+									}, 0);
 								}}>
 								Stop collaborating
 							</Button>
@@ -537,7 +540,7 @@
 					loading={quizRenaming}
 					form="rename-quiz"
 					type="submit">
-					Rename quiz
+					Save changes
 				</Button>
 			{/snippet}
 		</Modal>
