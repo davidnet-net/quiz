@@ -49,8 +49,8 @@ export function QuizRoom(getQuizId: () => string) {
 		const parsedUrl = new URL(rawUrl);
 		const wsProtocol = parsedUrl.protocol === "https:" ? "wss:" : "ws:";
 
-		const httpUrl = `${PUBLIC_BACKEND_URL}/websockets/quiz/${quizId}`;
-		const wsUrl = `${wsProtocol}//${parsedUrl.host}/websockets/quiz/${quizId}`;
+		const httpUrl = `${PUBLIC_BACKEND_URL}/websockets/quiz/edit/${quizId}`;
+		const wsUrl = `${wsProtocol}//${parsedUrl.host}/websockets/quiz/edit/${quizId}`;
 
 		let isIntentionallyClosed = false;
 		let reconnectTimeout: ReturnType<typeof setTimeout>;
@@ -167,7 +167,7 @@ export function QuizRoom(getQuizId: () => string) {
 		}
 
 		const syncState = () => {
-			quizName = quizMeta.get("name") || "Untitled Quiz";
+			quizName = quizMeta.get("name") || "Loading...";
 			quizTeamId = quizMeta.get("teamId") || undefined;
 			quizWorkspaceId = quizMeta.get("workspaceId") || undefined;
 			questions = questionsArray.toArray().map((qMap) => qMap.toJSON());

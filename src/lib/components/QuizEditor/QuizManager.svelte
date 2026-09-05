@@ -48,7 +48,7 @@
 		isSaving = true;
 		try {
 			const res = await patchFetch(
-				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}`,
+				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/edit/${quizId}`,
 				{ name: nameValue.trim() },
 				undefined,
 				true
@@ -79,7 +79,7 @@
 		loadingCollaborators = true;
 		try {
 			const res = await getFetch(
-				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}/collaborators`,
+				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/edit/${quizId}/collaborators`,
 				undefined,
 				undefined,
 				true
@@ -148,7 +148,7 @@
 			const targetUserId = profileRes.profileResponse.userId;
 
 			const res = await postFetch(
-				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}/collaborators`,
+				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/edit/${quizId}/collaborators`,
 				{ userId: targetUserId },
 				undefined,
 				true
@@ -159,7 +159,14 @@
 				newCollaboratorUsername = "";
 				await loadCollaborators();
 			} else {
-				toast("Error", res.error || "Failed to send invite.", "error", 4000, "danger");
+				let errorMsg = res?.error || "Failed to send invite.";
+				if (res?.code === "CANNOT_INVITE_SELF") {
+					errorMsg = "You cannot invite yourself to your own quiz.";
+				} else if (res?.code === "COLLABORATOR_ALREADY_EXISTS") {
+					errorMsg = "This user is already a collaborator or has a pending invite.";
+				}
+
+				toast("Error", errorMsg, "error", 4000, "danger");
 			}
 		} catch (err) {
 			console.error("Failed to send invite:", err);
@@ -173,7 +180,7 @@
 		if (!currentWorkspace?.id) return;
 		try {
 			const res = await deleteFetch(
-				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}/collaborators/${userId}`,
+				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/edit/${quizId}/collaborators/${userId}`,
 				undefined,
 				undefined,
 				true

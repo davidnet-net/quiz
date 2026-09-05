@@ -231,6 +231,7 @@
 
 	$effect(() => {
 		(async () => {
+			appState.hideNavigation = false;
 			await whenAuthReady();
 			if (!authState.isLoggedIn && !authState.loading) {
 				window.location.href = `${PUBLIC_ACCOUNT_FRONTEND_URL}/login?continue=${encodeURIComponent(page.url.href)}`;

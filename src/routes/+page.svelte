@@ -1,18 +1,10 @@
 <script lang="ts">
-	import { authState, Flex, whenAuthReady } from "@davidnet-net/svelte-ui";
-	import { goto } from "$app/navigation";
-	import { page } from "$app/state";
-	import { PUBLIC_ACCOUNT_FRONTEND_URL } from "$env/static/public";
-	import CodeInput from "$lib/components/CodeInput/CodeInput.svelte";
-	import { token } from "@davidnet-net/svelte-ui/tokens";
+	import { appState, Flex } from "@davidnet-net/svelte-ui";
 	import Card from "$lib/components/Card/Card.svelte";
 
 	$effect(() => {
 		(async () => {
-			await whenAuthReady();
-			if (!authState.isLoggedIn && !authState.loading) {
-				goto(`${PUBLIC_ACCOUNT_FRONTEND_URL}/login?continue=${encodeURIComponent(page.url.href)}`);
-			}
+			appState.hideNavigation = false;
 		})();
 	});
 </script>

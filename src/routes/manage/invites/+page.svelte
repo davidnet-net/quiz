@@ -51,7 +51,7 @@
 		}
 		try {
 			const res = await postFetch(
-				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}/collaborators/accept`,
+				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/edit/${quizId}/collaborators/accept`,
 				{},
 				undefined,
 				true
@@ -78,7 +78,7 @@
 		}
 		try {
 			const res = await deleteFetch(
-				`${PUBLIC_BACKEND_URL}${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}/collaborators/decline`,
+				`${PUBLIC_BACKEND_URL}${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/edit/${quizId}/collaborators/decline`,
 				undefined,
 				undefined,
 				true

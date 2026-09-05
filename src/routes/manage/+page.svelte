@@ -111,6 +111,7 @@
 
 	$effect(() => {
 		(async () => {
+			appState.hideNavigation = false;
 			await whenAuthReady();
 			if (!authState.isLoggedIn && !authState.loading) {
 				window.location.href = `${PUBLIC_ACCOUNT_FRONTEND_URL}/login?continue=${encodeURIComponent(page.url.href)}`;
@@ -319,14 +320,14 @@
 									}}>
 									Delete quiz
 								</Button>
-							{:else}
-								<Button type="button" appearance="subtle" disabled>Delete (No permission)</Button>
 							{/if}
 						</Dropdown>
 					</Flex>
 					<Flex justifyContent="end" height="fit-content" alignItems="center" gap="small">
 						<LinkButton href={`/manage/${quiz.id}/edit`}>Edit quiz</LinkButton>
-						<LinkButton href={`#`} appearance="primary">Present quiz</LinkButton>
+						<LinkButton appearance="primary" href={`/present/${quiz.id}`} {loading}>
+							Present quiz
+						</LinkButton>
 					</Flex>
 				</div>
 			{/each}
@@ -432,6 +433,7 @@
 			}}>
 			<Form
 				id="new-quiz"
+				onclick={(e) => e.stopPropagation()}
 				onsubmit={(e) => {
 					e.preventDefault();
 					createQuiz();
@@ -517,6 +519,7 @@
 			}}>
 			<Form
 				id="rename-quiz"
+				onclick={(e) => e.stopPropagation()}
 				onsubmit={(e) => {
 					e.preventDefault();
 					renameQuiz();
@@ -554,7 +557,7 @@
 				if (quizDeleting) return;
 				quizToDelete = null;
 			}}>
-			<p>
+			<p onclick={(e) => e.stopPropagation()}>
 				Are you sure you want to delete the quiz
 				<strong>{quizToDelete.name}</strong>
 				? This action cannot be undone.
@@ -586,7 +589,7 @@
 				if (quizStoppingCollab) return;
 				quizToStopCollab = null;
 			}}>
-			<p>
+			<p onclick={(e) => e.stopPropagation()}>
 				Are you sure you want to stop collaborating on
 				<strong>{quizToStopCollab.name}</strong>
 				? You will lose access to edit this quiz.
