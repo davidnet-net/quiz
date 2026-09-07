@@ -18,6 +18,7 @@
 	import QRCode from "@castlenine/svelte-qrcode";
 	import { PUBLIC_ACCOUNT_FRONTEND_URL } from "$env/static/public";
 	import { page } from "$app/state";
+	import { goto } from "$app/navigation";
 	import { presentQuiz } from "$lib/quizPresenter/presentQuiz.svelte";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 
@@ -58,7 +59,7 @@
 </script>
 
 {#if appState.isMobile}
-	<Flex justifyContent="center" alignItems="center" direction="column" gap="medium">
+	<Flex justifyContent="center" alignItems="center" direction="column" gap="medium" text="center">
 		<Icon icon="screenshot_monitor" color="danger" size="giant" />
 		<p>Screen size is too small to present quiz.</p>
 		<Button
@@ -68,6 +69,54 @@
 			}}>
 			Back
 		</Button>
+	</Flex>
+{:else if quizRoom.errorCode === "NO_QUESTIONS"}
+	<Flex justifyContent="center" alignItems="center" direction="column" gap="medium" text="center">
+		<Icon icon="quiz" color="danger" size="giant" />
+		<p>
+			This quiz has no questions.
+			<br />
+			Add some questions before presenting.
+		</p>
+		<Flex gap="medium" justifyContent="center" height="fit-content">
+			<Button
+				iconbefore="arrow_back"
+				onclick={() => {
+					navigateBack();
+				}}>
+				Back
+			</Button>
+			<Button
+				appearance="primary"
+				iconbefore="edit"
+				onclick={() => goto(`/manage/${page.params.quizid}`)}>
+				Edit Quiz
+			</Button>
+		</Flex>
+	</Flex>
+{:else if quizRoom.errorCode === "QUESTION_INVALID"}
+	<Flex justifyContent="center" alignItems="center" direction="column" gap="medium" text="center">
+		<Icon icon="quiz" color="danger" size="giant" />
+		<p>
+			One or more questions in this quiz are invalid.
+			<br />
+			Please fix them before presenting.
+		</p>
+		<Flex gap="medium" justifyContent="center" height="fit-content">
+			<Button
+				iconbefore="arrow_back"
+				onclick={() => {
+					navigateBack();
+				}}>
+				Back
+			</Button>
+			<Button
+				appearance="primary"
+				iconbefore="edit"
+				onclick={() => goto(`/manage/${page.params.quizid}`)}>
+				Edit Quiz
+			</Button>
+		</Flex>
 	</Flex>
 {:else}
 	<Flex

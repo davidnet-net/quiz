@@ -5,6 +5,7 @@ import { error } from "@sveltejs/kit";
 
 export function presentQuiz(getQuizId: () => string) {
 	let loading = $state(true);
+	let errorCode = $state<string | null>(null);
 	let socket = $state<WebSocket | null>(null);
 	let quizName = $state<string>("Test quiz");
 	let pinCode = $state<string>("000000");
@@ -36,6 +37,13 @@ export function presentQuiz(getQuizId: () => string) {
 				if (res.status === 404) return goto(`/manage/${quizId}/not_found`, { replaceState: true });
 				if (!res.ok) {
 					const data = await res.json().catch(() => ({}));
+
+					if (data.code === "NO_QUESTIONS" || data.code === "QUESTION_INVALID") {
+						errorCode = data.code;
+						loading = false;
+						return;
+					}
+
 					throw error(res.status, data.error || "Failed to start presentation");
 				}
 				const data = await res.json();
@@ -156,6 +164,9 @@ export function presentQuiz(getQuizId: () => string) {
 	return {
 		get loading() {
 			return loading;
+		},
+		get errorCode() {
+			return errorCode;
 		},
 		get pinCode() {
 			return pinCode;
