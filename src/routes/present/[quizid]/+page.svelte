@@ -89,7 +89,7 @@
 			<Button
 				appearance="primary"
 				iconbefore="edit"
-				onclick={() => goto(`/manage/${page.params.quizid}`)}>
+				onclick={() => goto(`/manage/${page.params.quizid}/edit`)}>
 				Edit Quiz
 			</Button>
 		</Flex>
@@ -113,7 +113,7 @@
 			<Button
 				appearance="primary"
 				iconbefore="edit"
-				onclick={() => goto(`/manage/${page.params.quizid}`)}>
+				onclick={() => goto(`/manage/${page.params.quizid}/edit`)}>
 				Edit Quiz
 			</Button>
 		</Flex>
