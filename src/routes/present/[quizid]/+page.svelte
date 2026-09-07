@@ -142,11 +142,13 @@
 							<Icon icon="lock" size="giant" />
 						</div>
 					{:else}
-						<QRCode
-							data={`https://quiz.davidnet.net/join?pin=${quizRoom.pinCode}`}
-							haveBackgroundRoundedEdges
-							isResponsive
-							shape="square" />
+						{#key quizRoom.pinCode}
+							<QRCode
+								data={`https://quiz.davidnet.net/join?pin=${quizRoom.pinCode}`}
+								haveBackgroundRoundedEdges
+								isResponsive
+								shape="square" />
+						{/key}
 					{/if}
 				</Flex>
 			</Flex>

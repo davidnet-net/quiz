@@ -49,6 +49,7 @@ export function presentQuiz(getQuizId: () => string) {
 				const data = await res.json();
 				sessionId = data.sessionId;
 				if (data.pinCode) pinCode = data.pinCode;
+				if (data.quizName) quizName = data.quizName;
 				connectWebSocket();
 			})
 			.catch((err) => {
@@ -82,6 +83,7 @@ export function presentQuiz(getQuizId: () => string) {
 						if (message.payload.pinCode) pinCode = message.payload.pinCode;
 						if (typeof message.payload.locked === "boolean") locked = message.payload.locked;
 						if (message.payload.sessionId) sessionId = message.payload.sessionId;
+						if (message.payload.quizName) quizName = message.payload.quizName;
 						if (message.payload.connectionId) hostConnectionId = message.payload.connectionId;
 						if (Array.isArray(message.payload.players)) {
 							players = message.payload.players;
