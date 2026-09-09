@@ -148,7 +148,7 @@
 			const targetUserId = profileRes.profileResponse.userId;
 
 			const res = await postFetch(
-				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/edit/${quizId}/collaborators`,
+				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}/collaborators`,
 				{ userId: targetUserId },
 				undefined,
 				true
@@ -180,7 +180,7 @@
 		if (!currentWorkspace?.id) return;
 		try {
 			const res = await deleteFetch(
-				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/edit/${quizId}/collaborators/${userId}`,
+				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}/collaborators/${userId}`,
 				undefined,
 				undefined,
 				true
