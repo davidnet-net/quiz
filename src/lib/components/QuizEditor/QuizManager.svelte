@@ -48,7 +48,7 @@
 		isSaving = true;
 		try {
 			const res = await patchFetch(
-				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/edit/${quizId}`,
+				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}`,
 				{ name: nameValue.trim() },
 				undefined,
 				true
@@ -79,7 +79,7 @@
 		loadingCollaborators = true;
 		try {
 			const res = await getFetch(
-				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/edit/${quizId}/collaborators`,
+				`${PUBLIC_BACKEND_URL}/workspaces/${currentWorkspace.id}/quiz/${quizId}/collaborators`,
 				undefined,
 				undefined,
 				true
