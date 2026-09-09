@@ -1,4 +1,4 @@
-<!-- src/routes/manage/[quizId]/present/+page.svelte -->
+<!-- src/routes/present/[quizid]/+page.svelte -->
 <script lang="ts">
 	import {
 		appState,
@@ -21,11 +21,41 @@
 	import { goto } from "$app/navigation";
 	import { presentQuiz } from "$lib/quizPresenter/presentQuiz.svelte";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
+	import PresenterQuestion from "$lib/components/QuizPresenter/PresenterQuestion.svelte";
 
 	const quizRoom = presentQuiz(() => page.params.quizid || "");
 
 	let shareIcon: iconType = $state("share");
 	let iconTimeout: ReturnType<typeof setTimeout>;
+
+	let remainingTimeMs = $state(0);
+	let isFullscreen = $state(false);
+
+	function toggleFullscreen() {
+		if (!document.fullscreenElement) {
+			document.documentElement.requestFullscreen().catch(() => {});
+			isFullscreen = true;
+		} else {
+			document.exitFullscreen().catch(() => {});
+			isFullscreen = false;
+		}
+	}
+
+	$effect(() => {
+		if (quizRoom.gameState === "preview" || quizRoom.gameState === "active") {
+			const networkDelay = Math.max(0, Date.now() - quizRoom.timerServerTime);
+			const target = Date.now() + (quizRoom.timerDurationMs - networkDelay);
+
+			let frame: number;
+			const update = () => {
+				remainingTimeMs = Math.max(0, target - Date.now());
+				if (remainingTimeMs > 0) frame = requestAnimationFrame(update);
+			};
+
+			update();
+			return () => cancelAnimationFrame(frame);
+		}
+	});
 
 	async function handleShare() {
 		const url = `https://quiz.davidnet.net/join?pin=${quizRoom.pinCode}`;
@@ -119,78 +149,106 @@
 		</Flex>
 	</Flex>
 {:else}
-	<Flex
-		justifyContent="start"
-		alignItems="center"
-		direction="column"
-		gap="medium"
-		style="padding-bottom: 60px;">
-		<div class={styles.banner}>
-			<Flex justifyContent="spaceBetween" alignItems="start" padding="medium">
-				<div style="position: relative; z-index: 1;">
-					<h1 style="padding: 0px; margin: 0px; font-size: 5dvh;">{quizRoom.quizName}</h1>
-					<span style="padding: 0px; margin: 0px; font-size: 8dvh;">
-						PIN: <b>{quizRoom.locked ? "Locked" : quizRoom.pinCode}</b>
-					</span>
-				</div>
-				<Flex height="17dvh" width="17dvh" justifyContent="center" alignItems="center">
-					{#if quizRoom.locked}
-						<div
-							style="height: 100%; width: 100%; border-radius: {token.global.radius
-								.huge}; background-color: {token.theme.color.surface.overlay
-								.normal}; display: flex; justify-content: center; align-items: center;">
-							<Icon icon="lock" size="giant" />
-						</div>
-					{:else}
-						{#key quizRoom.pinCode}
-							<QRCode
-								data={`https://quiz.davidnet.net/join?pin=${quizRoom.pinCode}`}
-								haveBackgroundRoundedEdges
-								isResponsive
-								shape="square" />
-						{/key}
-					{/if}
+	{#if quizRoom.gameState === "lobby"}
+		<Flex
+			justifyContent="start"
+			alignItems="center"
+			direction="column"
+			gap="medium"
+			style="padding-bottom: 60px;">
+			<div class={styles.banner}>
+				<Flex justifyContent="spaceBetween" alignItems="start" padding="medium">
+					<div style="position: relative; z-index: 1;">
+						<h1 style="padding: 0px; margin: 0px; font-size: 5dvh;">{quizRoom.quizName}</h1>
+						<span style="padding: 0px; margin: 0px; font-size: 8dvh;">
+							PIN: <b>{quizRoom.locked ? "Locked" : quizRoom.pinCode}</b>
+						</span>
+					</div>
+					<Flex height="17dvh" width="17dvh" justifyContent="center" alignItems="center">
+						{#if quizRoom.locked}
+							<div
+								style="height: 100%; width: 100%; border-radius: {token.global.radius
+									.huge}; background-color: {token.theme.color.surface.overlay
+									.normal}; display: flex; justify-content: center; align-items: center;">
+								<Icon icon="lock" size="giant" />
+							</div>
+						{:else}
+							{#key quizRoom.pinCode}
+								<QRCode
+									data={`https://quiz.davidnet.net/join?pin=${quizRoom.pinCode}`}
+									haveBackgroundRoundedEdges
+									isResponsive
+									shape="square" />
+							{/key}
+						{/if}
+					</Flex>
 				</Flex>
-			</Flex>
-		</div>
+			</div>
 
-		<Flex height="fit-content" justifyContent="center" alignItems="center" gap="medium">
-			{#if quizRoom.locked}
-				<p style="padding: 0px; margin: 0px; font-size: 2dvh;">
-					No one can join anymore. The quiz is locked!
-				</p>
-			{:else}
-				<p style="padding: 0px; margin: 0px; font-size: 2dvh;">
-					Join the quiz using the pin on <b>quiz.davidnet.net/join</b>
-					or scan the QRCode above.
-				</p>
-			{/if}
-		</Flex>
-		<Divider color="tertiary" thickness="thick" />
-
-		<Flex width="80%" height="fit-content" gap="medium" flexWrap="wrap">
-			{#each quizRoom.players as player (player.id)}
-				<span class={styles.nickname}>
-					{#if player.failingHeartbeat}
-						<Icon icon="android_wifi_3_bar_alert" color="danger" />
-					{/if}
-					{player.nickname}
-					<IconButton
-						icon="delete_forever"
-						onclick={() => quizRoom.removePlayer(player.id)}
-						tip="Remove player and block nickname" />
-				</span>
-			{/each}
-			{#if quizRoom.players.length < 1}
-				<Flex height="fit-content" justifyContent="center" alignItems="center">
+			<Flex height="fit-content" justifyContent="center" alignItems="center" gap="medium">
+				{#if quizRoom.locked}
 					<p style="padding: 0px; margin: 0px; font-size: 2dvh;">
-						No one has joined this quiz yet.
+						No one can join anymore. The quiz is locked!
 					</p>
+				{:else}
+					<p style="padding: 0px; margin: 0px; font-size: 2dvh;">
+						Join the quiz using the pin on <b>quiz.davidnet.net/join</b>
+						or scan the QRCode above.
+					</p>
+				{/if}
+			</Flex>
+			<Divider color="tertiary" thickness="thick" />
+
+			<Flex width="80%" height="fit-content" gap="medium" flexWrap="wrap">
+				{#each quizRoom.players as player (player.id)}
+					<span class={styles.nickname}>
+						{#if player.failingHeartbeat}
+							<Icon icon="android_wifi_3_bar_alert" color="danger" />
+						{/if}
+						{player.nickname}
+						<IconButton
+							icon="delete_forever"
+							onclick={() => quizRoom.removePlayer(player.id)}
+							tip="Remove player and block nickname" />
+					</span>
+				{/each}
+				{#if quizRoom.players.length < 1}
+					<Flex height="fit-content" justifyContent="center" alignItems="center">
+						<p style="padding: 0px; margin: 0px; font-size: 2dvh;">
+							No one has joined this quiz yet.
+						</p>
+					</Flex>
+				{/if}
+			</Flex>
+		</Flex>
+	{:else}
+		<!-- PREVIEW OR ACTIVE QUESTION VIEW -->
+		<Flex
+			justifyContent="start"
+			alignItems="center"
+			direction="column"
+			gap="large"
+			padding="giant"
+			style="padding-bottom: 80px; min-height: 100dvh; box-sizing: border-box;">
+			<h1 style="font-size: 4dvh; margin: 0; max-height: 100%;">
+				{#if quizRoom.gameState === "preview"}
+					<Flex justifyContent="center" alignItems="center" style="font-size: 20dvh;" text="center">
+						Get Ready!
+					</Flex>
+				{:else}
+					{Math.ceil(remainingTimeMs / 1000)}s
+				{/if}
+			</h1>
+
+			{#if quizRoom.gameState === "active" && quizRoom.currentQuestionPayload}
+				<Flex justifyContent="center" alignItems="center">
+					<PresenterQuestion payload={quizRoom.currentQuestionPayload} />
 				</Flex>
 			{/if}
 		</Flex>
-	</Flex>
+	{/if}
 
+	<!-- PERSISTENT FROSTBAR FOR ALL GAME STATES -->
 	<div class={styles.frostbar}>
 		<div style="font-size: 1.25rem; font-weight: bold;">
 			PIN: {quizRoom.locked ? "Locked" : quizRoom.pinCode}
@@ -211,6 +269,11 @@
 				icon={shareIcon}
 				onclick={handleShare}
 				tip="Copy share link" />
+			<IconButton
+				appearance="default"
+				icon={isFullscreen ? "fullscreen_exit" : "fullscreen"}
+				onclick={toggleFullscreen}
+				tip={isFullscreen ? "Exit fullscreen" : "Fullscreen"} />
 			<Button
 				appearance="default"
 				onclick={() => {
@@ -219,14 +282,16 @@
 				}}>
 				Stop presenting
 			</Button>
-			<Button
-				appearance="primary"
-				disabled={quizRoom.players.length < 1}
-				onclick={() => {
-					showStartModal = true;
-				}}>
-				Start quiz
-			</Button>
+			{#if quizRoom.gameState === "lobby"}
+				<Button
+					appearance="primary"
+					disabled={quizRoom.players.length < 1}
+					onclick={() => {
+						showStartModal = true;
+					}}>
+					Start quiz
+				</Button>
+			{/if}
 			<Flex
 				height="fit-content"
 				justifyContent="center"

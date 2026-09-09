@@ -13,6 +13,12 @@ export function presentQuiz(getQuizId: () => string) {
 	let players = $state<Array<{ id: string; nickname: string; failingHeartbeat?: boolean }>>([]);
 	let isIntentionallyClosed = false;
 
+	// Track the active state of the game
+	let gameState = $state<"lobby" | "preview" | "active">("lobby");
+	let currentQuestionPayload = $state<any>(null);
+	let timerServerTime = $state(0);
+	let timerDurationMs = $state(0);
+
 	$effect(() => {
 		const quizId = getQuizId();
 		if (!quizId) return;
@@ -107,6 +113,16 @@ export function presentQuiz(getQuizId: () => string) {
 								? { ...p, failingHeartbeat: message.payload.failingHeartbeat }
 								: p
 						);
+					} else if (message.type === "QUESTION_PREVIEW") {
+						gameState = "preview";
+						currentQuestionPayload = message.payload;
+						timerServerTime = message.serverTime;
+						timerDurationMs = message.durationMs;
+					} else if (message.type === "QUESTION_ACTIVE") {
+						gameState = "active";
+						currentQuestionPayload = message.payload;
+						timerServerTime = message.serverTime;
+						timerDurationMs = message.durationMs;
 					}
 				} catch (e) {
 					console.error("[Quiz Presenter] Failed to parse message:", e);
@@ -201,6 +217,18 @@ export function presentQuiz(getQuizId: () => string) {
 		},
 		get players() {
 			return players;
+		},
+		get gameState() {
+			return gameState;
+		},
+		get currentQuestionPayload() {
+			return currentQuestionPayload;
+		},
+		get timerServerTime() {
+			return timerServerTime;
+		},
+		get timerDurationMs() {
+			return timerDurationMs;
 		},
 		toggleLock,
 		removePlayer,

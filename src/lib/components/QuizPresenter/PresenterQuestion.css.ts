@@ -1,6 +1,16 @@
 import { token } from "@davidnet-net/svelte-ui/tokens";
 import { style } from "@vanilla-extract/css";
 
+export const container = style({
+	display: "flex",
+	flexDirection: "column",
+	width: "100%",
+	maxWidth: "1200px",
+	gap: token.global.spacing.giant,
+	alignItems: "center",
+	boxSizing: "border-box"
+});
+
 export const questionContainer = style({
 	minHeight: "6rem",
 	width: "95%",
@@ -15,12 +25,21 @@ export const questionContainer = style({
 	boxSizing: "border-box"
 });
 
+export const questionText = style({
+	fontSize: "2rem",
+	fontWeight: token.global.font.weight.medium,
+	wordBreak: "break-word",
+	overflowWrap: "break-word",
+	width: "100%",
+	color: token.theme.color.text.primary
+});
+
 export const imageContainer = style({
 	width: "50%",
 	minWidth: "15rem",
 	aspectRatio: "1 / 1",
-	minHeight: "20rem",
-	maxHeight: "25rem",
+	minHeight: "15rem",
+	maxHeight: "20rem",
 	backgroundColor: token.theme.color.surface.raised.normal,
 	borderRadius: token.global.radius.huge,
 	overflow: "hidden",
@@ -31,32 +50,30 @@ export const imageContainer = style({
 
 export const answerContainer = style({
 	display: "flex",
+	flexDirection: "column",
+	width: "95%",
+	gap: token.global.spacing.medium
+});
+
+export const answerRow = style({
+	display: "flex",
 	width: "100%",
-	justifyContent: "center",
+	justifyContent: "space-between",
 	alignItems: "stretch",
 	gap: token.global.spacing.medium
 });
 
 export const answerBox = style({
-	position: "relative",
-	width: "45%",
+	width: "48%",
 	minHeight: "10rem",
-	color: token.theme.color.text.default,
 	borderRadius: token.global.radius.large,
 	display: "flex",
-	alignItems: "center",
-	justifyContent: "center", // Centers the True/False text
-	padding: "1rem",
+	alignItems: "flex-start",
+	padding: "1.5rem",
 	boxSizing: "border-box",
-	fontSize: token.global.font.size.xlarge, // Larger text for True/False
-	fontWeight: token.global.font.weight.bold,
-	cursor: "pointer",
-	flexShrink: 0,
-	transition: "all 0.2s ease"
-});
-
-export const checkboxWrapper = style({
-	position: "absolute",
-	top: "1.25rem",
-	left: "1.25rem"
+	fontSize: token.global.font.size.large,
+	fontWeight: token.global.font.weight.medium,
+	color: token.theme.color.text.default,
+	wordBreak: "break-word",
+	overflowWrap: "break-word"
 });

@@ -31,7 +31,10 @@ export const imageContainer = style({
 	maxHeight: "25rem",
 	backgroundColor: token.theme.color.surface.raised.normal,
 	borderRadius: token.global.radius.huge,
-	overflow: "hidden"
+	overflow: "hidden",
+	justifyContent: "center",
+	alignItems: "center",
+	display: "flex"
 });
 
 export const answerRow = style({

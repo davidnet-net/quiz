@@ -14,8 +14,9 @@
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 	import { page } from "$app/state";
 	import { PUBLIC_BACKEND_URL } from "$env/static/public";
+	import PlayerQuestion from "$lib/components/QuizPlayer/PlayerQuestion.svelte";
 
-	let step = $state<"pin" | "nickname" | "waiting">("pin");
+	let step = $state<"pin" | "nickname" | "waiting" | "preview" | "active">("pin");
 	let pinCode = $state("");
 	let nickname = $state("");
 	let loading = $state(false);
@@ -25,6 +26,29 @@
 	let reconnectTimeout: ReturnType<typeof setTimeout>;
 	let isIntentionallyClosed = false;
 	let participantId = $state<string | null>(null);
+
+	// Track active game payloads and times
+	let currentQuestionPayload = $state<any>(null);
+	let timerServerTime = $state(0);
+	let timerDurationMs = $state(0);
+	let remainingTimeMs = $state(0);
+
+	// Player Server-relative timer sync
+	$effect(() => {
+		if (step === "preview" || step === "active") {
+			const networkDelay = Math.max(0, Date.now() - timerServerTime);
+			const target = Date.now() + (timerDurationMs - networkDelay);
+
+			let frame: number;
+			const update = () => {
+				remainingTimeMs = Math.max(0, target - Date.now());
+				if (remainingTimeMs > 0) frame = requestAnimationFrame(update);
+			};
+
+			update();
+			return () => cancelAnimationFrame(frame);
+		}
+	});
 
 	$effect(() => {
 		if (pinCode.length === 6 && step === "pin" && !loading) {
@@ -44,7 +68,7 @@
 	$effect(() => {
 		const handleVisibilityChange = async () => {
 			if (document.visibilityState === "visible") {
-				if (step === "waiting" && pinCode.length === 6) {
+				if (step !== "pin" && step !== "nickname" && pinCode.length === 6) {
 					if (!socket || socket.readyState !== WebSocket.OPEN) {
 						connectAndJoin(true);
 					}
@@ -153,17 +177,26 @@
 			try {
 				const message = JSON.parse(event.data);
 
-				// No longer sending participantId back to the server; the server just knows natively!
 				if (message.type === "PING") {
 					ws.send(JSON.stringify({ type: "PONG" }));
 				} else if (message.type === "JOINED_SUCCESS") {
 					participantId = message.payload.id;
-					step = "waiting";
+					if (step === "nickname") step = "waiting";
 				} else if (message.type === "KICKED" || message.type === "SESSION_TERMINATED") {
 					resetToPinState(message.message || "You have been removed by the host.", "block");
 				} else if (message.type === "ERROR") {
 					toast("Error", message.message, "error", 5000, "danger");
 					ws.close();
+				} else if (message.type === "QUESTION_PREVIEW") {
+					step = "preview";
+					currentQuestionPayload = message.payload;
+					timerServerTime = message.serverTime;
+					timerDurationMs = message.durationMs;
+				} else if (message.type === "QUESTION_ACTIVE") {
+					step = "active";
+					currentQuestionPayload = message.payload;
+					timerServerTime = message.serverTime;
+					timerDurationMs = message.durationMs;
 				}
 			} catch (e) {
 				console.error("WS error:", e);
@@ -178,7 +211,7 @@
 				return;
 			}
 
-			if (step === "waiting") {
+			if (step !== "pin" && step !== "nickname") {
 				if (reconnectAttempts >= 15) {
 					resetToPinState("Lost connection to the session completely.");
 					return;
@@ -234,7 +267,8 @@
 	direction="column"
 	gap="medium"
 	text="center"
-	padding="giant">
+	padding={step === "active" ? "none" : "giant"}
+	style={step === "active" ? "height: 100dvh;" : ""}>
 	{#if step === "pin"}
 		<div>
 			<h1>Join quiz</h1>
@@ -282,5 +316,25 @@
 		</div>
 		<p style="font-weight: bold; font-size: 1.25rem;">Nickname: {nickname}</p>
 		<Button appearance="danger" onclick={leaveSession}>Leave quiz</Button>
+	{:else if step === "preview"}
+		<h1 style="font-size: 4rem; margin: 0;">Look at the board!</h1>
+		<h2 style="font-size: 6rem; margin: 0; color: {token.theme.color.text.primary}">
+			{Math.ceil(remainingTimeMs / 1000)}s
+		</h2>
+	{:else if step === "active"}
+		<!-- Timer bar at top for active state -->
+		<div style="width: 100%; padding: 1rem; box-sizing: border-box; ">
+			<h2 style="margin: 0; font-size: 2rem;">
+				Time left: <span style="color: {token.theme.color.text.primary}">
+					{Math.ceil(remainingTimeMs / 1000)}s
+				</span>
+			</h2>
+		</div>
+
+		<Flex style="flex: 1; width: 100%;" alignItems="stretch">
+			{#if currentQuestionPayload}
+				<PlayerQuestion payload={currentQuestionPayload} />
+			{/if}
+		</Flex>
 	{/if}
 </Flex>
