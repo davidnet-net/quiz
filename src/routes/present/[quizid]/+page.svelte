@@ -223,7 +223,7 @@
 				appearance="primary"
 				disabled={quizRoom.players.length < 1}
 				onclick={() => {
-					showStartModal = !showStartModal;
+					showStartModal = true;
 				}}>
 				Start quiz
 			</Button>
@@ -254,7 +254,14 @@
 				}}>
 				Cancel
 			</Button>
-			<Button appearance="primary">Start quiz</Button>
+			<Button
+				appearance="primary"
+				onclick={() => {
+					showStartModal = false;
+					quizRoom.startQuiz();
+				}}>
+				Start quiz
+			</Button>
 		{/snippet}
 	</Modal>
 {/if}

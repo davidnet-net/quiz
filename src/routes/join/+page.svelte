@@ -128,7 +128,11 @@
 			: `http://${PUBLIC_BACKEND_URL}`;
 		const parsedUrl = new URL(rawUrl);
 		const wsProtocol = parsedUrl.protocol === "https:" ? "wss:" : "ws:";
-		const wsUrl = `${wsProtocol}//${parsedUrl.host}/websockets/quiz/play/${pinCode}`;
+
+		let wsUrl = `${wsProtocol}//${parsedUrl.host}/websockets/quiz/play/${pinCode}`;
+		if (participantId) {
+			wsUrl += `?participantId=${encodeURIComponent(participantId)}`;
+		}
 
 		const ws = new WebSocket(wsUrl);
 		socket = ws;
@@ -148,8 +152,10 @@
 		ws.onmessage = (event) => {
 			try {
 				const message = JSON.parse(event.data);
+
+				// No longer sending participantId back to the server; the server just knows natively!
 				if (message.type === "PING") {
-					ws.send(JSON.stringify({ type: "PONG", participantId }));
+					ws.send(JSON.stringify({ type: "PONG" }));
 				} else if (message.type === "JOINED_SUCCESS") {
 					participantId = message.payload.id;
 					step = "waiting";

@@ -1,4 +1,3 @@
-// src/lib/quizPresenter/presentQuiz.svelte.ts
 import { PUBLIC_BACKEND_URL } from "$env/static/public";
 import { goto } from "$app/navigation";
 import { error } from "@sveltejs/kit";
@@ -12,7 +11,6 @@ export function presentQuiz(getQuizId: () => string) {
 	let locked = $state<boolean>(false);
 	let sessionId = $state<string | null>(null);
 	let players = $state<Array<{ id: string; nickname: string; failingHeartbeat?: boolean }>>([]);
-	let hostConnectionId = $state<string | null>(null);
 	let isIntentionallyClosed = false;
 
 	$effect(() => {
@@ -25,13 +23,10 @@ export function presentQuiz(getQuizId: () => string) {
 		const parsedUrl = new URL(rawUrl);
 		const wsProtocol = parsedUrl.protocol === "https:" ? "wss:" : "ws:";
 
-		const httpUrl = `${PUBLIC_BACKEND_URL}/websockets/quiz/present/${quizId}`;
-		const wsUrl = `${wsProtocol}//${parsedUrl.host}/websockets/quiz/present/${quizId}`;
-
 		let reconnectTimeout: ReturnType<typeof setTimeout>;
 		let reconnectAttempts = 0;
 
-		fetch(httpUrl, { credentials: "include" })
+		fetch(`${PUBLIC_BACKEND_URL}/websockets/quiz/present/${quizId}`, { credentials: "include" })
 			.then(async (res) => {
 				if (res.status === 403) return goto(`/manage/${quizId}/no_access`);
 				if (res.status === 404) return goto(`/manage/${quizId}/not_found`, { replaceState: true });
@@ -54,12 +49,25 @@ export function presentQuiz(getQuizId: () => string) {
 			})
 			.catch((err) => {
 				console.error("[Quiz Presenter] Pre-flight fetch error:", err);
-				if (err?.status) throw err;
-				connectWebSocket();
+				if (!err?.status) {
+					connectWebSocket();
+				}
 			});
 
 		function connectWebSocket() {
 			if (isIntentionallyClosed) return;
+
+			if (
+				socket &&
+				(socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN)
+			) {
+				return;
+			}
+
+			let wsUrl = `${wsProtocol}//${parsedUrl.host}/websockets/quiz/present/${quizId}`;
+			if (sessionId) {
+				wsUrl += `?sessionId=${encodeURIComponent(sessionId)}`;
+			}
 
 			const ws = new WebSocket(wsUrl);
 			socket = ws;
@@ -75,7 +83,7 @@ export function presentQuiz(getQuizId: () => string) {
 					const message = JSON.parse(event.data);
 
 					if (message.type === "PING") {
-						ws.send(JSON.stringify({ type: "PONG", connectionId: hostConnectionId }));
+						ws.send(JSON.stringify({ type: "PONG" }));
 						return;
 					}
 
@@ -84,7 +92,6 @@ export function presentQuiz(getQuizId: () => string) {
 						if (typeof message.payload.locked === "boolean") locked = message.payload.locked;
 						if (message.payload.sessionId) sessionId = message.payload.sessionId;
 						if (message.payload.quizName) quizName = message.payload.quizName;
-						if (message.payload.connectionId) hostConnectionId = message.payload.connectionId;
 						if (Array.isArray(message.payload.players)) {
 							players = message.payload.players;
 						}
@@ -126,7 +133,11 @@ export function presentQuiz(getQuizId: () => string) {
 
 		const handleVisibilityChange = () => {
 			if (document.visibilityState === "visible") {
-				if (!socket || socket.readyState !== WebSocket.OPEN) {
+				if (
+					!socket ||
+					socket.readyState === WebSocket.CLOSED ||
+					socket.readyState === WebSocket.CLOSING
+				) {
 					connectWebSocket();
 				}
 			}
@@ -152,6 +163,12 @@ export function presentQuiz(getQuizId: () => string) {
 		players = players.filter((p) => p.id !== playerId);
 		if (socket && socket.readyState === WebSocket.OPEN) {
 			socket.send(JSON.stringify({ type: "REMOVE_PLAYER", payload: { playerId } }));
+		}
+	}
+
+	function startQuiz() {
+		if (socket && socket.readyState === WebSocket.OPEN) {
+			socket.send(JSON.stringify({ type: "START_SESSION" }));
 		}
 	}
 
@@ -187,6 +204,7 @@ export function presentQuiz(getQuizId: () => string) {
 		},
 		toggleLock,
 		removePlayer,
+		startQuiz,
 		stopPresentation
 	};
 }
