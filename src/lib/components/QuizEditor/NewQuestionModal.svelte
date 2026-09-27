@@ -23,7 +23,9 @@
 	import informationLight from "$lib/assets/quizimages/information-light.svg";
 
 	const isDarkTheme = $derived(
-		currentTheme?.themeName === "dark" || currentTheme?.themeName === "contrast"
+		currentTheme?.themeName === "dark" ||
+			currentTheme?.themeName === "contrast" ||
+			(currentTheme?.themeName === "system" && appState.systemPreference.darkMode)
 	);
 	let {
 		handleNewQuestionSelection

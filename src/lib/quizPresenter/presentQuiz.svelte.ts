@@ -13,11 +13,58 @@ export function presentQuiz(getQuizId: () => string) {
 	let players = $state<Array<{ id: string; nickname: string; failingHeartbeat?: boolean }>>([]);
 	let isIntentionallyClosed = false;
 
-	// Track the active state of the game
-	let gameState = $state<"lobby" | "preview" | "active">("lobby");
+	let gameState = $state<"lobby" | "preview" | "active" | "results" | "leaderboard" | "finished">(
+		"lobby"
+	);
 	let currentQuestionPayload = $state<any>(null);
 	let timerServerTime = $state(0);
 	let timerDurationMs = $state(0);
+	let responseCount = $state(0);
+	let resultsBreakdown = $state<Record<string, number>>({});
+	let leaderboardData = $state<Array<{ id: string; nickname: string; score: number }>>([]);
+
+	let autoMode = $state(false);
+	let autoTimerRemaining = $state(0);
+
+	$effect(() => {
+		if (!autoMode) {
+			autoTimerRemaining = 0;
+			return;
+		}
+
+		let duration = 0;
+		if (gameState === "results") {
+			duration = 7000;
+		} else if (gameState === "leaderboard") {
+			duration = 10000;
+		} else if (gameState === "finished") {
+			autoMode = false;
+			return;
+		}
+
+		if (duration === 0) return;
+
+		const target = Date.now() + duration;
+		let frame: number;
+		let triggered = false;
+
+		const update = () => {
+			autoTimerRemaining = Math.max(0, target - Date.now());
+			if (autoTimerRemaining > 0) {
+				frame = requestAnimationFrame(update);
+			} else if (!triggered) {
+				triggered = true;
+				nextPhase();
+			}
+		};
+
+		update();
+
+		return () => {
+			cancelAnimationFrame(frame);
+			autoTimerRemaining = 0;
+		};
+	});
 
 	$effect(() => {
 		const quizId = getQuizId();
@@ -28,7 +75,6 @@ export function presentQuiz(getQuizId: () => string) {
 			: `http://${PUBLIC_BACKEND_URL}`;
 		const parsedUrl = new URL(rawUrl);
 		const wsProtocol = parsedUrl.protocol === "https:" ? "wss:" : "ws:";
-
 		let reconnectTimeout: ReturnType<typeof setTimeout>;
 		let reconnectAttempts = 0;
 
@@ -38,13 +84,11 @@ export function presentQuiz(getQuizId: () => string) {
 				if (res.status === 404) return goto(`/manage/${quizId}/not_found`, { replaceState: true });
 				if (!res.ok) {
 					const data = await res.json().catch(() => ({}));
-
 					if (data.code === "NO_QUESTIONS" || data.code === "QUESTION_INVALID") {
 						errorCode = data.code;
 						loading = false;
 						return;
 					}
-
 					throw error(res.status, data.error || "Failed to start presentation");
 				}
 				const data = await res.json();
@@ -55,26 +99,19 @@ export function presentQuiz(getQuizId: () => string) {
 			})
 			.catch((err) => {
 				console.error("[Quiz Presenter] Pre-flight fetch error:", err);
-				if (!err?.status) {
-					connectWebSocket();
-				}
+				if (!err?.status) connectWebSocket();
 			});
 
 		function connectWebSocket() {
 			if (isIntentionallyClosed) return;
-
 			if (
 				socket &&
 				(socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN)
-			) {
+			)
 				return;
-			}
 
 			let wsUrl = `${wsProtocol}//${parsedUrl.host}/websockets/quiz/present/${quizId}`;
-			if (sessionId) {
-				wsUrl += `?sessionId=${encodeURIComponent(sessionId)}`;
-			}
-
+			if (sessionId) wsUrl += `?sessionId=${encodeURIComponent(sessionId)}`;
 			const ws = new WebSocket(wsUrl);
 			socket = ws;
 
@@ -87,7 +124,6 @@ export function presentQuiz(getQuizId: () => string) {
 			ws.onmessage = (event) => {
 				try {
 					const message = JSON.parse(event.data);
-
 					if (message.type === "PING") {
 						ws.send(JSON.stringify({ type: "PONG" }));
 						return;
@@ -98,13 +134,10 @@ export function presentQuiz(getQuizId: () => string) {
 						if (typeof message.payload.locked === "boolean") locked = message.payload.locked;
 						if (message.payload.sessionId) sessionId = message.payload.sessionId;
 						if (message.payload.quizName) quizName = message.payload.quizName;
-						if (Array.isArray(message.payload.players)) {
-							players = message.payload.players;
-						}
+						if (Array.isArray(message.payload.players)) players = message.payload.players;
 					} else if (message.type === "PLAYER_JOINED") {
-						if (!players.some((p) => p.id === message.payload.id)) {
+						if (!players.some((p) => p.id === message.payload.id))
 							players = [...players, message.payload];
-						}
 					} else if (message.type === "PLAYER_LEFT") {
 						players = players.filter((p) => p.id !== message.payload.id);
 					} else if (message.type === "PLAYER_HEALTH_UPDATE") {
@@ -118,11 +151,31 @@ export function presentQuiz(getQuizId: () => string) {
 						currentQuestionPayload = message.payload;
 						timerServerTime = message.serverTime;
 						timerDurationMs = message.durationMs;
+						responseCount = 0;
+						resultsBreakdown = {};
 					} else if (message.type === "QUESTION_ACTIVE") {
 						gameState = "active";
 						currentQuestionPayload = message.payload;
 						timerServerTime = message.serverTime;
 						timerDurationMs = message.durationMs;
+					} else if (message.type === "RESPONSES_UPDATE") {
+						responseCount = message.count;
+					} else if (message.type === "RESULTS") {
+						gameState = "results";
+						resultsBreakdown = message.breakdown || {};
+						currentQuestionPayload = message.payload;
+					} else if (message.type === "LEADERBOARD") {
+						gameState = "leaderboard";
+						leaderboardData = message.payload;
+					} else if (message.type === "FINISHED") {
+						gameState = "finished";
+						leaderboardData = message.payload;
+					} else if (message.type === "SYNC_STATE") {
+						gameState = message.phase;
+						currentQuestionPayload = message.payload;
+						if (message.resultsBreakdown) resultsBreakdown = message.resultsBreakdown;
+						if (message.leaderboard) leaderboardData = message.leaderboard;
+						if (message.responseCount) responseCount = message.responseCount;
 					}
 				} catch (e) {
 					console.error("[Quiz Presenter] Failed to parse message:", e);
@@ -131,13 +184,9 @@ export function presentQuiz(getQuizId: () => string) {
 
 			ws.onclose = (event) => {
 				if (isIntentionallyClosed) return;
-
-				if (event.code === 4003 || event.reason.includes("403")) {
+				if (event.code === 4003 || event.reason.includes("403"))
 					return goto(`/manage/${quizId}/no_access`);
-				}
-				if (event.code === 4004 || event.reason.includes("404")) {
-					throw error(404, "Quiz not found");
-				}
+				if (event.code === 4004 || event.reason.includes("404")) throw error(404, "Quiz not found");
 
 				loading = true;
 				const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
@@ -153,14 +202,12 @@ export function presentQuiz(getQuizId: () => string) {
 					!socket ||
 					socket.readyState === WebSocket.CLOSED ||
 					socket.readyState === WebSocket.CLOSING
-				) {
+				)
 					connectWebSocket();
-				}
 			}
 		};
 
 		document.addEventListener("visibilitychange", handleVisibilityChange);
-
 		return () => {
 			isIntentionallyClosed = true;
 			clearTimeout(reconnectTimeout);
@@ -171,29 +218,30 @@ export function presentQuiz(getQuizId: () => string) {
 
 	function toggleLock() {
 		if (!socket || socket.readyState !== WebSocket.OPEN) return;
-		const type = locked ? "UNLOCK_SESSION" : "LOCK_SESSION";
-		socket.send(JSON.stringify({ type }));
+		socket.send(JSON.stringify({ type: locked ? "UNLOCK_SESSION" : "LOCK_SESSION" }));
 	}
-
 	function removePlayer(playerId: string) {
 		players = players.filter((p) => p.id !== playerId);
-		if (socket && socket.readyState === WebSocket.OPEN) {
+		if (socket && socket.readyState === WebSocket.OPEN)
 			socket.send(JSON.stringify({ type: "REMOVE_PLAYER", payload: { playerId } }));
-		}
 	}
-
 	function startQuiz() {
-		if (socket && socket.readyState === WebSocket.OPEN) {
+		if (socket && socket.readyState === WebSocket.OPEN)
 			socket.send(JSON.stringify({ type: "START_SESSION" }));
-		}
 	}
-
+	function nextPhase() {
+		if (socket && socket.readyState === WebSocket.OPEN)
+			socket.send(JSON.stringify({ type: "NEXT_PHASE" }));
+	}
 	function stopPresentation() {
 		isIntentionallyClosed = true;
 		if (socket && socket.readyState === WebSocket.OPEN) {
 			socket.send(JSON.stringify({ type: "STOP_SESSION" }));
 			socket.close(1000, "Intentional Stop");
 		}
+	}
+	function toggleAutoMode() {
+		autoMode = !autoMode;
 	}
 
 	return {
@@ -230,9 +278,26 @@ export function presentQuiz(getQuizId: () => string) {
 		get timerDurationMs() {
 			return timerDurationMs;
 		},
+		get responseCount() {
+			return responseCount;
+		},
+		get resultsBreakdown() {
+			return resultsBreakdown;
+		},
+		get leaderboardData() {
+			return leaderboardData;
+		},
+		get autoMode() {
+			return autoMode;
+		},
+		get autoTimerRemaining() {
+			return autoTimerRemaining;
+		},
 		toggleLock,
 		removePlayer,
 		startQuiz,
-		stopPresentation
+		nextPhase,
+		stopPresentation,
+		toggleAutoMode
 	};
 }

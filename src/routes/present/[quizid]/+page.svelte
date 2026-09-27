@@ -45,13 +45,16 @@
 		if (quizRoom.gameState === "preview" || quizRoom.gameState === "active") {
 			const networkDelay = Math.max(0, Date.now() - quizRoom.timerServerTime);
 			const target = Date.now() + (quizRoom.timerDurationMs - networkDelay);
-
 			let frame: number;
 			const update = () => {
 				remainingTimeMs = Math.max(0, target - Date.now());
-				if (remainingTimeMs > 0) frame = requestAnimationFrame(update);
+				if (
+					remainingTimeMs > 0 &&
+					(quizRoom.gameState === "active" || quizRoom.gameState === "preview")
+				) {
+					frame = requestAnimationFrame(update);
+				}
 			};
-
 			update();
 			return () => cancelAnimationFrame(frame);
 		}
@@ -67,7 +70,6 @@
 			shareIcon = "error";
 			toast("Error", "Failed to copy link.", "error", 3000, "danger");
 		}
-
 		clearTimeout(iconTimeout);
 		iconTimeout = setTimeout(() => {
 			shareIcon = "share";
@@ -77,7 +79,6 @@
 	$effect(() => {
 		(async () => {
 			appState.hideNavigation = true;
-
 			await whenAuthReady();
 			if (!authState.isLoggedIn && !authState.loading) {
 				window.location.href = `${PUBLIC_ACCOUNT_FRONTEND_URL}/login?continue=${encodeURIComponent(page.url.href)}`;
@@ -92,54 +93,20 @@
 	<Flex justifyContent="center" alignItems="center" direction="column" gap="medium" text="center">
 		<Icon icon="screenshot_monitor" color="danger" size="giant" />
 		<p>Screen size is too small to present quiz.</p>
-		<Button
-			iconbefore="arrow_back"
-			onclick={() => {
-				navigateBack();
-			}}>
-			Back
-		</Button>
+		<Button iconbefore="arrow_back" onclick={() => navigateBack()}>Back</Button>
 	</Flex>
-{:else if quizRoom.errorCode === "NO_QUESTIONS"}
+{:else if quizRoom.errorCode === "NO_QUESTIONS" || quizRoom.errorCode === "QUESTION_INVALID"}
 	<Flex justifyContent="center" alignItems="center" direction="column" gap="medium" text="center">
 		<Icon icon="quiz" color="danger" size="giant" />
 		<p>
-			This quiz has no questions.
-			<br />
-			Add some questions before presenting.
-		</p>
-		<Flex gap="medium" justifyContent="center" height="fit-content">
-			<Button
-				iconbefore="arrow_back"
-				onclick={() => {
-					navigateBack();
-				}}>
-				Back
-			</Button>
-			<Button
-				appearance="primary"
-				iconbefore="edit"
-				onclick={() => goto(`/manage/${page.params.quizid}/edit`)}>
-				Edit Quiz
-			</Button>
-		</Flex>
-	</Flex>
-{:else if quizRoom.errorCode === "QUESTION_INVALID"}
-	<Flex justifyContent="center" alignItems="center" direction="column" gap="medium" text="center">
-		<Icon icon="quiz" color="danger" size="giant" />
-		<p>
-			One or more questions in this quiz are invalid.
+			{quizRoom.errorCode === "NO_QUESTIONS"
+				? "This quiz has no questions."
+				: "One or more questions are invalid."}
 			<br />
 			Please fix them before presenting.
 		</p>
 		<Flex gap="medium" justifyContent="center" height="fit-content">
-			<Button
-				iconbefore="arrow_back"
-				onclick={() => {
-					navigateBack();
-				}}>
-				Back
-			</Button>
+			<Button iconbefore="arrow_back" onclick={() => navigateBack()}>Back</Button>
 			<Button
 				appearance="primary"
 				iconbefore="edit"
@@ -186,16 +153,11 @@
 			</div>
 
 			<Flex height="fit-content" justifyContent="center" alignItems="center" gap="medium">
-				{#if quizRoom.locked}
-					<p style="padding: 0px; margin: 0px; font-size: 2dvh;">
-						No one can join anymore. The quiz is locked!
-					</p>
-				{:else}
-					<p style="padding: 0px; margin: 0px; font-size: 2dvh;">
-						Join the quiz using the pin on <b>quiz.davidnet.net/join</b>
-						or scan the QRCode above.
-					</p>
-				{/if}
+				<p style="padding: 0px; margin: 0px; font-size: 2dvh;">
+					{quizRoom.locked
+						? "No one can join anymore. The quiz is locked!"
+						: "Join the quiz using the pin on quiz.davidnet.net/join or scan the QRCode above."}
+				</p>
 			</Flex>
 			<Divider color="tertiary" thickness="thick" />
 
@@ -209,7 +171,7 @@
 						<IconButton
 							icon="delete_forever"
 							onclick={() => quizRoom.removePlayer(player.id)}
-							tip="Remove player and block nickname" />
+							tip="Remove player" />
 					</span>
 				{/each}
 				{#if quizRoom.players.length < 1}
@@ -221,8 +183,27 @@
 				{/if}
 			</Flex>
 		</Flex>
-	{:else}
-		<!-- PREVIEW OR ACTIVE QUESTION VIEW -->
+	{:else if quizRoom.gameState === "preview"}
+		<Flex
+			justifyContent="center"
+			alignItems="center"
+			direction="column"
+			gap="large"
+			padding="giant"
+			style="padding-bottom: 80px; min-height: 100dvh; box-sizing: border-box;">
+			<h1 style="font-size: 5rem; text-align: center; margin: 0;">
+				{quizRoom.currentQuestionPayload?.question?.text}
+			</h1>
+			<div style="font-size: 15rem; font-weight: bold; color: {token.theme.color.text.primary};">
+				{Math.ceil(remainingTimeMs / 1000)}
+			</div>
+			{#if quizRoom.currentQuestionPayload?.question?.pointsMultiplier > 1}
+				<h2 class="pop-animation" style="color: var(--color-danger); font-size: 4rem; margin: 0;">
+					2X POINTS!
+				</h2>
+			{/if}
+		</Flex>
+	{:else if quizRoom.gameState === "active"}
 		<Flex
 			justifyContent="start"
 			alignItems="center"
@@ -230,21 +211,126 @@
 			gap="large"
 			padding="giant"
 			style="padding-bottom: 80px; min-height: 100dvh; box-sizing: border-box;">
-			<h1 style="font-size: 4dvh; margin: 0; max-height: 100%;">
-				{#if quizRoom.gameState === "preview"}
-					<Flex justifyContent="center" alignItems="center" style="font-size: 20dvh;" text="center">
-						Get Ready!
-					</Flex>
-				{:else}
+			<div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+				<h1 style="font-size: 4dvh; margin: 0;">
 					{Math.ceil(remainingTimeMs / 1000)}s
+				</h1>
+				{#if quizRoom.currentQuestionPayload?.question?.pointsMultiplier > 1}
+					<h2 class="pop-animation" style="color: var(--color-danger); margin: 0;">2X POINTS</h2>
 				{/if}
-			</h1>
+				<div style="font-size: 2rem; font-weight: bold;">
+					{quizRoom.responseCount} Answers
+				</div>
+			</div>
 
-			{#if quizRoom.gameState === "active" && quizRoom.currentQuestionPayload}
-				<Flex justifyContent="center" alignItems="center">
-					<PresenterQuestion payload={quizRoom.currentQuestionPayload} />
+			{#if quizRoom.currentQuestionPayload}
+				<Flex justifyContent="center" alignItems="center" style="width: 100%;">
+					<PresenterQuestion payload={quizRoom.currentQuestionPayload} showResults={false} />
 				</Flex>
 			{/if}
+		</Flex>
+	{:else if quizRoom.gameState === "results"}
+		<Flex
+			justifyContent="start"
+			alignItems="center"
+			direction="column"
+			gap="large"
+			padding="giant"
+			style="padding-bottom: 80px; min-height: 100dvh; box-sizing: border-box;">
+			<div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+				<h1 style="font-size: 4dvh; margin: 0;">Results</h1>
+				{#if quizRoom.autoMode}
+					<div
+						style="font-size: 2rem; font-weight: bold; color: {token.theme.color.text.secondary};">
+						Auto-skip in {Math.ceil(quizRoom.autoTimerRemaining / 1000)}s
+					</div>
+				{/if}
+			</div>
+			<PresenterQuestion
+				payload={quizRoom.currentQuestionPayload}
+				showResults={true}
+				resultsBreakdown={quizRoom.resultsBreakdown} />
+		</Flex>
+	{:else if quizRoom.gameState === "leaderboard"}
+		<Flex
+			justifyContent="center"
+			alignItems="center"
+			direction="column"
+			gap="large"
+			padding="giant"
+			style="padding-bottom: 80px; min-height: 100dvh; box-sizing: border-box;">
+			<div
+				style="display: flex; justify-content: space-between; width: 60%; align-items: center; margin-bottom: 2rem;">
+				<h1 style="font-size: 4rem; margin: 0;">Top 5</h1>
+				{#if quizRoom.autoMode}
+					<div
+						style="font-size: 2rem; font-weight: bold; color: {token.theme.color.text.secondary};">
+						Next in {Math.ceil(quizRoom.autoTimerRemaining / 1000)}s
+					</div>
+				{/if}
+			</div>
+			{#each quizRoom.leaderboardData as p, i}
+				<div
+					style="display: flex; justify-content: space-between; width: 60%; font-size: 2rem; background: var(--color-surface-raised-normal); padding: 1rem; border-radius: 8px; margin-bottom: 10px;">
+					<span>
+						<b>{i + 1}.</b>
+						{p.nickname}
+					</span>
+					<span>{p.score}</span>
+				</div>
+			{/each}
+		</Flex>
+	{:else if quizRoom.gameState === "finished"}
+		<Flex
+			justifyContent="center"
+			alignItems="center"
+			direction="column"
+			gap="large"
+			padding="giant"
+			style="padding-bottom: 80px; min-height: 100dvh; box-sizing: border-box;">
+			<h1 style="font-size: 5rem;">Final Podium</h1>
+			<div
+				style="display: flex; gap: 2rem; align-items: flex-end; height: 300px; margin-top: 2rem;">
+				<!-- 2nd Place -->
+				{#if quizRoom.leaderboardData[1]}
+					<div style="display: flex; flex-direction: column; align-items: center;">
+						<span style="font-size: 2rem; font-weight: bold;">
+							{quizRoom.leaderboardData[1].nickname}
+						</span>
+						<span style="margin-bottom: 1rem;">{quizRoom.leaderboardData[1].score} pts</span>
+						<div
+							style="width: 100px; height: 150px; background: silver; display: flex; justify-content: center; font-size: 3rem; font-weight: bold; color: white;">
+							2
+						</div>
+					</div>
+				{/if}
+				<!-- 1st Place -->
+				{#if quizRoom.leaderboardData[0]}
+					<div style="display: flex; flex-direction: column; align-items: center;">
+						<span style="font-size: 2.5rem; font-weight: bold;">
+							{quizRoom.leaderboardData[0].nickname}
+						</span>
+						<span style="margin-bottom: 1rem;">{quizRoom.leaderboardData[0].score} pts</span>
+						<div
+							style="width: 120px; height: 220px; background: gold; display: flex; justify-content: center; font-size: 4rem; font-weight: bold; color: white;">
+							1
+						</div>
+					</div>
+				{/if}
+				<!-- 3rd Place -->
+				{#if quizRoom.leaderboardData[2]}
+					<div style="display: flex; flex-direction: column; align-items: center;">
+						<span style="font-size: 1.5rem; font-weight: bold;">
+							{quizRoom.leaderboardData[2].nickname}
+						</span>
+						<span style="margin-bottom: 1rem;">{quizRoom.leaderboardData[2].score} pts</span>
+						<div
+							style="width: 100px; height: 100px; background: #cd7f32; display: flex; justify-content: center; font-size: 3rem; font-weight: bold; color: white;">
+							3
+						</div>
+					</div>
+				{/if}
+			</div>
 		</Flex>
 	{/if}
 
@@ -259,6 +345,22 @@
 			alignItems="center"
 			width="fit-content"
 			gap="medium">
+			{#if quizRoom.gameState !== "lobby" && quizRoom.gameState !== "finished" && quizRoom.gameState !== "preview"}
+				<Button
+					appearance={quizRoom.autoMode ? "primary" : "default"}
+					onclick={() => quizRoom.toggleAutoMode()}>
+					{quizRoom.autoMode ? "Disable auto" : "Enable auto"}
+				</Button>
+
+				<Button appearance="primary" onclick={() => quizRoom.nextPhase()}>
+					{quizRoom.gameState === "active"
+						? "Skip / Show Results"
+						: quizRoom.gameState === "results"
+							? "Next (Leaderboard)"
+							: "Next Question"}
+				</Button>
+			{/if}
+
 			<IconButton
 				onclick={() => quizRoom.toggleLock()}
 				tip={quizRoom.locked ? "Unlock presentation." : "Lock presentation."}
@@ -274,6 +376,7 @@
 				icon={isFullscreen ? "fullscreen_exit" : "fullscreen"}
 				onclick={toggleFullscreen}
 				tip={isFullscreen ? "Exit fullscreen" : "Fullscreen"} />
+
 			<Button
 				appearance="default"
 				onclick={() => {
@@ -282,16 +385,16 @@
 				}}>
 				Stop presenting
 			</Button>
+
 			{#if quizRoom.gameState === "lobby"}
 				<Button
 					appearance="primary"
 					disabled={quizRoom.players.length < 1}
-					onclick={() => {
-						showStartModal = true;
-					}}>
+					onclick={() => (showStartModal = true)}>
 					Start quiz
 				</Button>
 			{/if}
+
 			<Flex
 				height="fit-content"
 				justifyContent="center"
@@ -306,19 +409,10 @@
 {/if}
 
 {#if showStartModal}
-	<Modal
-		title="Start quiz?"
-		onclose={() => {
-			showStartModal = false;
-		}}>
+	<Modal title="Start quiz?" onclose={() => (showStartModal = false)}>
 		Are you sure you want to start the quiz?
 		{#snippet actions()}
-			<Button
-				onclick={() => {
-					showStartModal = false;
-				}}>
-				Cancel
-			</Button>
+			<Button onclick={() => (showStartModal = false)}>Cancel</Button>
 			<Button
 				appearance="primary"
 				onclick={() => {
@@ -330,3 +424,24 @@
 		{/snippet}
 	</Modal>
 {/if}
+
+<style>
+	@keyframes pulse-pop {
+		0% {
+			transform: scale(1);
+			opacity: 1;
+		}
+		50% {
+			transform: scale(1.15);
+			opacity: 0.9;
+			text-shadow: 0 0 20px var(--color-danger);
+		}
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+	.pop-animation {
+		animation: pulse-pop 1s ease-in-out infinite;
+	}
+</style>
