@@ -41,22 +41,23 @@
 		}
 	}
 
+	// Stabiele timer met setInterval voor vloeiende aftelling
 	$effect(() => {
-		if (quizRoom.gameState === "preview" || quizRoom.gameState === "active") {
-			const networkDelay = Math.max(0, Date.now() - quizRoom.timerServerTime);
-			const target = Date.now() + (quizRoom.timerDurationMs - networkDelay);
-			let frame: number;
-			const update = () => {
+		const state = quizRoom.gameState;
+		const duration = quizRoom.timerDurationMs;
+
+		if (state === "preview" || state === "active") {
+			const target = Date.now() + duration;
+			remainingTimeMs = duration;
+
+			const interval = setInterval(() => {
 				remainingTimeMs = Math.max(0, target - Date.now());
-				if (
-					remainingTimeMs > 0 &&
-					(quizRoom.gameState === "active" || quizRoom.gameState === "preview")
-				) {
-					frame = requestAnimationFrame(update);
+				if (remainingTimeMs <= 0) {
+					clearInterval(interval);
 				}
-			};
-			update();
-			return () => cancelAnimationFrame(frame);
+			}, 50);
+
+			return () => clearInterval(interval);
 		}
 	});
 
@@ -194,9 +195,15 @@
 			<h1 style="font-size: 5rem; text-align: center; margin: 0;">
 				{quizRoom.currentQuestionPayload?.question?.text}
 			</h1>
-			<div style="font-size: 15rem; font-weight: bold; color: {token.theme.color.text.primary};">
-				{Math.ceil(remainingTimeMs / 1000)}
-			</div>
+
+			{#key Math.ceil(remainingTimeMs / 1000)}
+				<div
+					class="countdown-text"
+					style="font-size: 15rem; font-weight: bold; color: {token.theme.color.text.primary};">
+					{Math.ceil(remainingTimeMs / 1000)}
+				</div>
+			{/key}
+
 			{#if quizRoom.currentQuestionPayload?.question?.pointsMultiplier > 1}
 				<h2 class="pop-animation" style="color: var(--color-danger); font-size: 4rem; margin: 0;">
 					2X POINTS!
@@ -443,5 +450,24 @@
 	}
 	.pop-animation {
 		animation: pulse-pop 1s ease-in-out infinite;
+	}
+
+	@keyframes countdown-tick {
+		0% {
+			transform: scale(1.3);
+			opacity: 0;
+		}
+		20% {
+			transform: scale(1);
+			opacity: 1;
+		}
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+	.countdown-text {
+		animation: countdown-tick 1s ease-out;
+		display: inline-block;
 	}
 </style>

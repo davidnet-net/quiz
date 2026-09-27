@@ -40,7 +40,6 @@
 			? "display: flex; flex-direction: row; align-items: stretch; gap: 1rem; width: 100%;"
 			: "width: 100%;"}>
 		{#if isTrueFalse}
-			<!-- Render side-by-side for true_false -->
 			{#each options as option, i}
 				<div
 					class={styles.answerBox}
@@ -67,7 +66,6 @@
 				</div>
 			{/each}
 		{:else}
-			<!-- Standard Kahoot Grid -->
 			{#each [[0, 1], [2, 3]] as rowIndices}
 				<div class={styles.answerRow}>
 					{#each rowIndices as i}

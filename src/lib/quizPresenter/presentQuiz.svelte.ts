@@ -17,7 +17,6 @@ export function presentQuiz(getQuizId: () => string) {
 		"lobby"
 	);
 	let currentQuestionPayload = $state<any>(null);
-	let timerServerTime = $state(0);
 	let timerDurationMs = $state(0);
 	let responseCount = $state(0);
 	let resultsBreakdown = $state<Record<string, number>>({});
@@ -26,6 +25,7 @@ export function presentQuiz(getQuizId: () => string) {
 	let autoMode = $state(false);
 	let autoTimerRemaining = $state(0);
 
+	// Stabiele Auto Mode timer met setInterval om vastlopen te voorkomen
 	$effect(() => {
 		if (!autoMode) {
 			autoTimerRemaining = 0;
@@ -44,24 +44,19 @@ export function presentQuiz(getQuizId: () => string) {
 
 		if (duration === 0) return;
 
-		const target = Date.now() + duration;
-		let frame: number;
-		let triggered = false;
+		autoTimerRemaining = duration;
+		const intervalTime = 100;
 
-		const update = () => {
-			autoTimerRemaining = Math.max(0, target - Date.now());
-			if (autoTimerRemaining > 0) {
-				frame = requestAnimationFrame(update);
-			} else if (!triggered) {
-				triggered = true;
+		const timerInterval = setInterval(() => {
+			autoTimerRemaining -= intervalTime;
+			if (autoTimerRemaining <= 0) {
+				clearInterval(timerInterval);
 				nextPhase();
 			}
-		};
-
-		update();
+		}, intervalTime);
 
 		return () => {
-			cancelAnimationFrame(frame);
+			clearInterval(timerInterval);
 			autoTimerRemaining = 0;
 		};
 	});
@@ -116,9 +111,9 @@ export function presentQuiz(getQuizId: () => string) {
 			socket = ws;
 
 			ws.onopen = () => {
-				console.log("[Quiz Presenter] Connected to presentation room");
 				loading = false;
 				reconnectAttempts = 0;
+				ws.send(JSON.stringify({ type: "REQUEST_SYNC" }));
 			};
 
 			ws.onmessage = (event) => {
@@ -149,14 +144,12 @@ export function presentQuiz(getQuizId: () => string) {
 					} else if (message.type === "QUESTION_PREVIEW") {
 						gameState = "preview";
 						currentQuestionPayload = message.payload;
-						timerServerTime = message.serverTime;
 						timerDurationMs = message.durationMs;
 						responseCount = 0;
 						resultsBreakdown = {};
 					} else if (message.type === "QUESTION_ACTIVE") {
 						gameState = "active";
 						currentQuestionPayload = message.payload;
-						timerServerTime = message.serverTime;
 						timerDurationMs = message.durationMs;
 					} else if (message.type === "RESPONSES_UPDATE") {
 						responseCount = message.count;
@@ -171,11 +164,12 @@ export function presentQuiz(getQuizId: () => string) {
 						gameState = "finished";
 						leaderboardData = message.payload;
 					} else if (message.type === "SYNC_STATE") {
-						gameState = message.phase;
-						currentQuestionPayload = message.payload;
+						if (message.phase) gameState = message.phase;
+						if (message.payload) currentQuestionPayload = message.payload;
 						if (message.resultsBreakdown) resultsBreakdown = message.resultsBreakdown;
 						if (message.leaderboard) leaderboardData = message.leaderboard;
 						if (message.responseCount) responseCount = message.responseCount;
+						if (message.durationMs) timerDurationMs = message.durationMs;
 					}
 				} catch (e) {
 					console.error("[Quiz Presenter] Failed to parse message:", e);
@@ -191,7 +185,6 @@ export function presentQuiz(getQuizId: () => string) {
 				loading = true;
 				const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
 				reconnectAttempts++;
-				console.log(`[Quiz Presenter] Connection lost. Reconnecting in ${delay}ms...`);
 				reconnectTimeout = setTimeout(connectWebSocket, delay);
 			};
 		}
@@ -202,8 +195,11 @@ export function presentQuiz(getQuizId: () => string) {
 					!socket ||
 					socket.readyState === WebSocket.CLOSED ||
 					socket.readyState === WebSocket.CLOSING
-				)
+				) {
 					connectWebSocket();
+				} else if (socket.readyState === WebSocket.OPEN) {
+					socket.send(JSON.stringify({ type: "REQUEST_SYNC" }));
+				}
 			}
 		};
 
@@ -271,9 +267,6 @@ export function presentQuiz(getQuizId: () => string) {
 		},
 		get currentQuestionPayload() {
 			return currentQuestionPayload;
-		},
-		get timerServerTime() {
-			return timerServerTime;
 		},
 		get timerDurationMs() {
 			return timerDurationMs;
