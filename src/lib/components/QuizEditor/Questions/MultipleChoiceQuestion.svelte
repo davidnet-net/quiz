@@ -4,6 +4,7 @@
 		Checkbox,
 		Field,
 		Flex,
+		Icon,
 		ImageUpload,
 		TextArea,
 		TextField
@@ -114,9 +115,29 @@
 
 	<div class={styles.imageContainer}>
 		{#if question?.mediaType === "image"}
-			<ImageUpload value={question?.mediaUrl || null} onUpload={handleImageUpload} onRemove={clearMedia} />
+			<Flex
+				direction="column"
+				gap="xsmall"
+				style="width: 100%;"
+				justifyContent="center"
+				alignItems="center">
+				<ImageUpload
+					value={question?.mediaUrl || null}
+					onUpload={handleImageUpload}
+					onRemove={clearMedia} />
+				{#if !question?.mediaUrl}
+					<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
+						Cancel
+					</Button>
+				{/if}
+			</Flex>
 		{:else if question?.mediaType === "youtube"}
-			<Flex direction="column" gap="xsmall" style="width: 100%;">
+			<Flex
+				direction="column"
+				gap="xsmall"
+				style="width: 100%;"
+				justifyContent="center"
+				alignItems="center">
 				<TextField
 					value={question?.mediaUrl || ""}
 					oninput={(e) =>
@@ -130,19 +151,22 @@
 				</Button>
 			</Flex>
 		{:else}
-			<Flex gap="xsmall">
-				<Button
-					appearance="subtle"
-					iconbefore="add_photo_alternate"
-					onclick={() => onUpdate({ mediaType: "image", mediaUrl: null })}>
-					Add image
-				</Button>
-				<Button
-					appearance="subtle"
-					iconbefore="smart_display"
-					onclick={() => onUpdate({ mediaType: "youtube", mediaUrl: null })}>
-					Embed YouTube
-				</Button>
+			<Flex gap="medium" justifyContent="center" alignItems="center" direction="column">
+				<Icon icon="image" size="giant" />
+				<Flex gap="small" justifyContent="center" alignItems="center" height="fit-content">
+					<Button
+						appearance="subtle"
+						iconbefore="add_photo_alternate"
+						onclick={() => onUpdate({ mediaType: "image", mediaUrl: null })}>
+						Add image
+					</Button>
+					<Button
+						appearance="subtle"
+						iconbefore="smart_display"
+						onclick={() => onUpdate({ mediaType: "youtube", mediaUrl: null })}>
+						Embed YouTube
+					</Button>
+				</Flex>
 			</Flex>
 		{/if}
 	</div>
