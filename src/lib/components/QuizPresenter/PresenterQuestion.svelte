@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Icon } from "@davidnet-net/svelte-ui";
+	import { Icon, IconButton, YoutubeEmbed } from "@davidnet-net/svelte-ui";
 	import * as styles from "./PresenterQuestion.css";
 
 	let {
@@ -12,6 +12,23 @@
 		(payload?.options || []).filter((opt: any) => opt.text && opt.text.trim() !== "")
 	);
 	let isTrueFalse = $derived(payload?.question?.type === "true_false");
+
+	let mediaType = $derived(payload?.question?.mediaType);
+	let mediaUrl = $derived(payload?.question?.mediaUrl);
+
+	const REVEAL_CLASSES: Record<string, string> = {
+		fade: styles.revealFade,
+		blur: styles.revealBlur,
+		slide: styles.revealSlide
+	};
+	let revealClass = $derived(REVEAL_CLASSES[payload?.question?.revealMode] ?? "");
+
+	let videoMuted = $state(true);
+	$effect(() => {
+		payload?.question?.id;
+		// Reset to muted for every new question, matching browser autoplay requirements.
+		videoMuted = true;
+	});
 
 	const defaultColors = [
 		{ color: "rgba(239, 68, 68, 1)", bg: "rgba(239, 68, 68, 0.25)" },
@@ -28,9 +45,24 @@
 		</div>
 	</div>
 
-	{#if !showResults}
+	{#if !showResults && mediaType === "image" && mediaUrl}
 		<div class={styles.imageContainer}>
-			<Icon icon="image" size="giant" />
+			<img class="{styles.mediaImage} {revealClass}" src={mediaUrl} alt="" />
+		</div>
+	{:else if !showResults && mediaType === "youtube" && mediaUrl}
+		<div class={styles.videoContainer}>
+			<div class={styles.videoWrapper}>
+				<YoutubeEmbed url={mediaUrl} autoplay bind:muted={videoMuted} />
+				{#if videoMuted}
+					<div class={styles.unmuteOverlay}>
+						<IconButton
+							icon="volume_off"
+							appearance="default"
+							tip="Unmute"
+							onclick={() => (videoMuted = false)} />
+					</div>
+				{/if}
+			</div>
 		</div>
 	{/if}
 

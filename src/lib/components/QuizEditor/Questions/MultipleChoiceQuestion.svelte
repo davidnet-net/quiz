@@ -1,13 +1,23 @@
 <script lang="ts">
-	import { Checkbox, Field, Flex, Icon, TextArea } from "@davidnet-net/svelte-ui";
+	import {
+		Button,
+		Checkbox,
+		Field,
+		Flex,
+		ImageUpload,
+		TextArea,
+		TextField
+	} from "@davidnet-net/svelte-ui";
 	import * as styles from "./MultipleChoiceQuestion.css";
 
 	let {
 		question,
-		onUpdate
+		onUpdate,
+		onUploadImage
 	}: {
 		question: any;
 		onUpdate: (updates: Record<string, any>) => void;
+		onUploadImage: (questionId: string, file: File) => Promise<string | null>;
 	} = $props();
 
 	const defaultOptions = [
@@ -48,6 +58,16 @@
 	);
 
 	let isMultiSelect = $derived(!!question?.isMultiSelect);
+
+	async function handleImageUpload(file: File): Promise<string | null> {
+		const url = await onUploadImage(question.id, file);
+		if (url) onUpdate({ mediaUrl: url, mediaType: "image" });
+		return url;
+	}
+
+	function clearMedia() {
+		onUpdate({ mediaUrl: null, mediaType: null });
+	}
 
 	/**
 	 * Updates an option payload and handles logical deselects for single-select mode.
@@ -92,7 +112,40 @@
 		</Field>
 	</div>
 
-	<div class={styles.imageContainer}><Icon icon="image" size="giant" /></div>
+	<div class={styles.imageContainer}>
+		{#if question?.mediaType === "image"}
+			<ImageUpload value={question?.mediaUrl || null} onUpload={handleImageUpload} onRemove={clearMedia} />
+		{:else if question?.mediaType === "youtube"}
+			<Flex direction="column" gap="xsmall" style="width: 100%;">
+				<TextField
+					value={question?.mediaUrl || ""}
+					oninput={(e) =>
+						onUpdate({
+							mediaUrl: (e.target as HTMLInputElement).value,
+							mediaType: "youtube"
+						})}
+					placeholder="Paste a YouTube URL..." />
+				<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
+					Remove video
+				</Button>
+			</Flex>
+		{:else}
+			<Flex gap="xsmall">
+				<Button
+					appearance="subtle"
+					iconbefore="add_photo_alternate"
+					onclick={() => onUpdate({ mediaType: "image", mediaUrl: null })}>
+					Add image
+				</Button>
+				<Button
+					appearance="subtle"
+					iconbefore="smart_display"
+					onclick={() => onUpdate({ mediaType: "youtube", mediaUrl: null })}>
+					Embed YouTube
+				</Button>
+			</Flex>
+		{/if}
+	</div>
 
 	<div class={styles.answerContainer}>
 		{#each [[0, 1], [2, 3]] as rowIndices}

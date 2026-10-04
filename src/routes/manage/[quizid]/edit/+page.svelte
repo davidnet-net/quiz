@@ -17,7 +17,8 @@
 		toast,
 		IconButton,
 		hasPermission,
-		syncWorkspaceAccess
+		syncWorkspaceAccess,
+		putFetch
 	} from "@davidnet-net/svelte-ui";
 	import * as styles from "./page.css.ts";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
@@ -262,6 +263,20 @@
 		activeQuestionId = newId;
 	}
 
+	async function uploadQuestionImage(questionId: string, file: File): Promise<string | null> {
+		if (!quizWorkspaceId) return null;
+
+		const base = `${PUBLIC_BACKEND_URL}/workspaces/${quizWorkspaceId}${
+			quizTeamId ? `/teams/${quizTeamId}` : ""
+		}/quiz/${params.quizid}/questions/${questionId}/image`;
+
+		const formData = new FormData();
+		formData.append("image", file);
+
+		const result = await putFetch(base, formData, undefined, true);
+		return result?.success ? result.url : null;
+	}
+
 	function handleQuestionUpdate(updates: Record<string, any>) {
 		if (activeQuestionId !== null) {
 			room.updateQuestion(activeQuestionId, updates);
@@ -423,9 +438,15 @@
 				<LoadingQuestion />
 			{:else if activeQuestionData}
 				{#if activeQuestionData.type === "true_false"}
-					<TrueOrFalse question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+					<TrueOrFalse
+						question={activeQuestionData}
+						onUpdate={handleQuestionUpdate}
+						onUploadImage={uploadQuestionImage} />
 				{:else if activeQuestionData.type === "quiz"}
-					<MultipleChoice question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+					<MultipleChoice
+						question={activeQuestionData}
+						onUpdate={handleQuestionUpdate}
+						onUploadImage={uploadQuestionImage} />
 				{:else}
 					<Flex
 						justifyContent="center"

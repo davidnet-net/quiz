@@ -1,5 +1,5 @@
 import { token } from "@davidnet-net/svelte-ui/tokens";
-import { style } from "@vanilla-extract/css";
+import { keyframes, style } from "@vanilla-extract/css";
 
 export const container = style({
 	display: "flex",
@@ -46,6 +46,56 @@ export const imageContainer = style({
 	justifyContent: "center",
 	alignItems: "center",
 	display: "flex"
+});
+
+export const mediaImage = style({
+	width: "100%",
+	height: "100%",
+	objectFit: "cover"
+});
+
+const fadeIn = keyframes({
+	from: { opacity: 0 },
+	to: { opacity: 1 }
+});
+
+const slideUp = keyframes({
+	from: { transform: "translateY(100%)", opacity: 0 },
+	to: { transform: "translateY(0)", opacity: 1 }
+});
+
+const blurIn = keyframes({
+	from: { filter: "blur(2rem)" },
+	to: { filter: "blur(0)" }
+});
+
+export const revealFade = style({
+	animation: `${fadeIn} 600ms ease`
+});
+
+export const revealSlide = style({
+	animation: `${slideUp} 500ms ease`
+});
+
+export const revealBlur = style({
+	animation: `${blurIn} 900ms ease`
+});
+
+export const videoContainer = style({
+	width: "95%",
+	maxWidth: "48rem"
+});
+
+export const unmuteOverlay = style({
+	position: "absolute",
+	bottom: token.global.spacing.medium,
+	right: token.global.spacing.medium,
+	zIndex: 1
+});
+
+export const videoWrapper = style({
+	position: "relative",
+	width: "100%"
 });
 
 export const answerContainer = style({

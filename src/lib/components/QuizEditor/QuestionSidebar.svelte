@@ -30,6 +30,15 @@
 	let pointsDisplay = $derived(question?.pointsMultiplier === 2 ? "Double points" : "Standard");
 	let answerOptionsDisplay = $derived(question?.isMultiSelect ? "Multi select" : "Single select");
 
+	const REVEAL_MODE_LABELS: Record<string, string> = {
+		instant: "Instant",
+		fade: "Fade in",
+		blur: "Blur reveal",
+		slide: "Slide in"
+	};
+	let revealModeDisplay = $derived(REVEAL_MODE_LABELS[question?.revealMode] ?? "Instant");
+	let hasImage = $derived(question?.mediaType === "image");
+
 	/**
 	 * Reverts question format to single-select, ensuring only the first
 	 * marked correct answer remains selected.
@@ -111,6 +120,34 @@
 					</Button>
 				{/each}
 			</Dropdown>
+
+			{#if hasImage}
+				<Dropdown isOpen={openDropdown === "compact-reveal-mode"}>
+					{#snippet trigger()}
+						<IconButton
+							{loading}
+							icon="animation"
+							appearance="default"
+							tip={`Reveal mode (${revealModeDisplay})`}
+							onclick={() =>
+								onDropdownToggle(
+									openDropdown === "compact-reveal-mode" ? null : "compact-reveal-mode"
+								)} />
+					{/snippet}
+					{#each Object.entries(REVEAL_MODE_LABELS) as [value, label]}
+						<Button
+							{loading}
+							appearance="subtle"
+							alignContent="left"
+							onclick={() => {
+								onUpdate({ revealMode: value });
+								onDropdownToggle(null);
+							}}>
+							{label}
+						</Button>
+					{/each}
+				</Dropdown>
+			{/if}
 
 			<Dropdown isOpen={openDropdown === "compact-answer-options"}>
 				{#snippet trigger()}
@@ -216,6 +253,38 @@
 					</Button>
 				{/each}
 			</Dropdown>
+
+			{#if hasImage}
+				<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">
+					<Icon icon="animation" />
+					<span>Reveal mode</span>
+				</Flex>
+				<Dropdown isOpen={openDropdown === "reveal-mode"} stretchWidthTrigger>
+					{#snippet trigger()}
+						<Button
+							{loading}
+							alignContent="left"
+							stretchwidth
+							appearance="default"
+							onclick={() =>
+								onDropdownToggle(openDropdown === "reveal-mode" ? null : "reveal-mode")}>
+							{revealModeDisplay}
+						</Button>
+					{/snippet}
+					{#each Object.entries(REVEAL_MODE_LABELS) as [value, label]}
+						<Button
+							{loading}
+							appearance="subtle"
+							alignContent="left"
+							onclick={() => {
+								onUpdate({ revealMode: value });
+								onDropdownToggle(null);
+							}}>
+							{label}
+						</Button>
+					{/each}
+				</Dropdown>
+			{/if}
 
 			<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">
 				<Icon icon="view_cozy" />
