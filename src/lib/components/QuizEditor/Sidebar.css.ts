@@ -60,3 +60,12 @@ export const questionCardText = style({
 	overflow: "hidden",
 	textOverflow: "ellipsis"
 });
+
+export const dragging = style({
+	opacity: 0.4
+});
+
+export const dropTargetHighlight = style({
+	outline: `2px solid ${token.theme.color.border.selected}`,
+	outlineOffset: "-1px"
+});

@@ -36,7 +36,8 @@
 		currentClientId = null,
 		onToggle,
 		onNewQuestion,
-		onSelectQuestion
+		onSelectQuestion,
+		onReorderQuestion
 	}: {
 		questions: Question[];
 		activeQuestionId: string | number | null;
@@ -48,9 +49,57 @@
 		onToggle: () => void;
 		onNewQuestion: () => void;
 		onSelectQuestion: (id: string | number) => void;
+		onReorderQuestion: (questionId: string | number, newIndex: number) => void;
 	} = $props();
 
 	let activeUsersList = $derived([...activeUsers.entries()]);
+
+	let draggedId = $state<string | number | null>(null);
+	let dropTarget = $state<{ index: number; position: "before" | "after" } | null>(null);
+
+	function resetDrag() {
+		draggedId = null;
+		dropTarget = null;
+	}
+
+	function handleDragStart(e: DragEvent, id: string | number) {
+		draggedId = id;
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = "move";
+			e.dataTransfer.setData("text/plain", String(id));
+		}
+	}
+
+	function handleDragOver(e: DragEvent, index: number) {
+		if (draggedId === null) return;
+		e.preventDefault();
+		const target = e.currentTarget as HTMLElement;
+		const rect = target.getBoundingClientRect();
+		const position: "before" | "after" =
+			e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+		if (dropTarget?.index !== index || dropTarget?.position !== position) {
+			dropTarget = { index, position };
+		}
+	}
+
+	function handleDrop(e: DragEvent, index: number) {
+		e.preventDefault();
+		if (draggedId === null || dropTarget === null) {
+			resetDrag();
+			return;
+		}
+
+		const targetId = questions[index]?.id;
+		const otherIds = questions.filter((q) => q.id !== draggedId).map((q) => q.id);
+		const targetPos = otherIds.indexOf(targetId);
+
+		if (targetPos !== -1) {
+			const finalIndex = dropTarget.position === "before" ? targetPos : targetPos + 1;
+			onReorderQuestion(draggedId, finalIndex);
+		}
+
+		resetDrag();
+	}
 
 	/**
 	 * Validates a question's data integrity. Checks for supported types,
@@ -145,9 +194,20 @@
 					{@const invalid = isQuestionInvalid(q)}
 					<Button
 						selected={activeQuestionId === q.id}
+						class={[
+							draggedId === q.id ? styles.dragging : "",
+							dropTarget?.index === index ? styles.dropTargetHighlight : ""
+						]
+							.filter(Boolean)
+							.join(" ")}
 						style="min-width: 2rem !important; max-width: 2rem !important; width: 2rem !important; margin: 0px; padding: 0rem; {invalid
 							? 'border: 1px solid ' + token.theme.color.text.danger + ' !important;'
 							: ''}"
+						draggable={true}
+						ondragstart={(e: DragEvent) => handleDragStart(e, q.id)}
+						ondragover={(e: DragEvent) => handleDragOver(e, index)}
+						ondrop={(e: DragEvent) => handleDrop(e, index)}
+						ondragend={resetDrag}
 						onclick={() => onSelectQuestion(q.id)}>
 						{index > 98 ? ".." : index + 1}
 					</Button>
@@ -198,12 +258,21 @@
 					)}
 
 					<button
-						class={styles.questionCardItem}
-						style="{activeQuestionId === q.id
-							? 'opacity: 1; border: 1px solid rgba(255,255,255,0.2);'
-							: 'opacity: 0.7;'} {invalid
+						class="{styles.questionCardItem} {dropTarget?.index === index
+							? styles.dropTargetHighlight
+							: ''}"
+						style="{draggedId === q.id
+							? 'opacity: 0.4;'
+							: activeQuestionId === q.id
+								? 'opacity: 1; border: 1px solid rgba(255,255,255,0.2);'
+								: 'opacity: 0.7;'} {invalid
 							? 'border-color: rgb(239, 68, 68) !important; box-shadow: 0 0 0 1px rgb(239, 68, 68);'
 							: ''}"
+						draggable={true}
+						ondragstart={(e) => handleDragStart(e, q.id)}
+						ondragover={(e) => handleDragOver(e, index)}
+						ondrop={(e) => handleDrop(e, index)}
+						ondragend={resetDrag}
 						onclick={() => onSelectQuestion(q.id)}>
 						<Flex direction="row" justifyContent="between" height="fit-content">
 							<span class={styles.questionCardText}>Question {index + 1}</span>

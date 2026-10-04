@@ -307,6 +307,10 @@
 		}
 	}
 
+	function handleReorderQuestion(questionId: string | number, newIndex: number) {
+		room.moveQuestion(questionId, newIndex);
+	}
+
 	function handleUpdateQuizName(newName: string) {
 		if (room?.doc) {
 			const quizMeta = room.doc.getMap("quizMeta");
@@ -437,7 +441,8 @@
 			onToggle={() => (mainSidebarOpened = !mainSidebarOpened)}
 			{loading}
 			onNewQuestion={() => (showNewQuestionModal = true)}
-			onSelectQuestion={(id) => (activeQuestionId = id)} />
+			onSelectQuestion={(id) => (activeQuestionId = id)}
+			onReorderQuestion={handleReorderQuestion} />
 
 		<!-- CENTER AREA: This is the ONLY element that gets to scroll -->
 		<div

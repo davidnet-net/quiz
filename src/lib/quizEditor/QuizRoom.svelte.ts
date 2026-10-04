@@ -1,9 +1,10 @@
 // QuizRoom.svelte.ts
-import * as Y from "yjs";
-import * as awarenessProtocol from "y-protocols/awareness";
-import { PUBLIC_BACKEND_URL } from "$env/static/public";
-import { goto } from "$app/navigation";
 import { error } from "@sveltejs/kit";
+import * as awarenessProtocol from "y-protocols/awareness";
+import * as Y from "yjs";
+
+import { goto } from "$app/navigation";
+import { PUBLIC_BACKEND_URL } from "$env/static/public";
 
 const USER_COLORS = [
 	"#f43f5e",
@@ -25,7 +26,7 @@ function getRandomUserColor() {
 }
 
 export function QuizRoom(getQuizId: () => string) {
-	let doc = new Y.Doc();
+	const doc = new Y.Doc();
 	let loading = $state(true);
 	let socket = $state<WebSocket | null>(null);
 
@@ -33,11 +34,11 @@ export function QuizRoom(getQuizId: () => string) {
 	const quizMeta = doc.getMap<string>("quizMeta");
 	const questionsArray = doc.getArray<Y.Map<any>>("questions");
 
-	let quizName = $state<string>("NAME");
+	let quizName = $state("NAME");
 	let quizTeamId = $state<string | undefined>(undefined);
 	let quizWorkspaceId = $state<string | undefined>(undefined);
 	let questions = $state<any[]>([]);
-	let activeUsers = $state<Map<number, any>>(new Map());
+	let activeUsers = $state(new Map());
 
 	$effect(() => {
 		const quizId = getQuizId();
@@ -234,6 +235,25 @@ export function QuizRoom(getQuizId: () => string) {
 		});
 	}
 
+	/**
+	 * Moves a question to `newIndex`, interpreted as its desired index in the
+	 * resulting array (i.e. after the question has been removed from its old slot).
+	 */
+	function moveQuestion(questionId: string | number, newIndex: number) {
+		doc.transact(() => {
+			const arr = questionsArray.toArray();
+			const fromIndex = arr.findIndex((q) => q.get("id") === questionId);
+			if (fromIndex === -1) return;
+
+			const clampedIndex = Math.max(0, Math.min(newIndex, arr.length - 1));
+			if (clampedIndex === fromIndex) return;
+
+			const item = questionsArray.get(fromIndex);
+			questionsArray.delete(fromIndex, 1);
+			questionsArray.insert(clampedIndex, [item]);
+		});
+	}
+
 	return {
 		get doc() {
 			return doc;
@@ -266,6 +286,7 @@ export function QuizRoom(getQuizId: () => string) {
 		updateQuizName,
 		addQuestion,
 		updateQuestion,
-		deleteQuestion
+		deleteQuestion,
+		moveQuestion
 	};
 }
