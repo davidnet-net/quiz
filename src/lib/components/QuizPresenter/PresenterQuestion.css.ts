@@ -113,6 +113,53 @@ export const answerRow = style({
 	gap: token.global.spacing.medium
 });
 
+export const histogramContainer = style({
+	display: "flex",
+	flexDirection: "row",
+	alignItems: "flex-end",
+	gap: token.global.spacing.small,
+	width: "95%",
+	minHeight: "12rem",
+	padding: "1rem"
+});
+
+export const histogramBarWrap = style({
+	display: "flex",
+	flexDirection: "column",
+	alignItems: "center",
+	gap: token.global.spacing.xsmall,
+	flex: 1
+});
+
+export const histogramBar = style({
+	width: "100%",
+	borderRadius: `${token.global.radius.medium} ${token.global.radius.medium} 0 0`,
+	backgroundColor: "rgba(59, 130, 246, 1)",
+	transition: "height 0.3s ease"
+});
+
+export const wordCloudContainer = style({
+	display: "flex",
+	flexWrap: "wrap",
+	justifyContent: "center",
+	alignItems: "center",
+	gap: token.global.spacing.medium,
+	width: "95%",
+	padding: "1rem"
+});
+
+export const listRow = style({
+	display: "flex",
+	flexDirection: "row",
+	alignItems: "center",
+	gap: token.global.spacing.small,
+	width: "95%",
+	backgroundColor: token.theme.color.surface.raised.normal,
+	borderRadius: token.global.radius.medium,
+	padding: "0.75rem 1rem",
+	boxSizing: "border-box"
+});
+
 export const answerBox = style({
 	width: "48%",
 	minHeight: "10rem",

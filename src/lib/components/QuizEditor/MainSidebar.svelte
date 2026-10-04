@@ -22,6 +22,7 @@
 		text: string;
 		isMultiSelect?: boolean;
 		options?: Option[];
+		settings?: Record<string, number | string>;
 	}
 
 	let {
@@ -58,9 +59,19 @@
 	 * @param q - The Question object to evaluate.
 	 * @returns True if the question has validation errors, false otherwise.
 	 */
-	function isQuestionInvalid(q: Question): boolean {
-		const SUPPORTED_TYPES = ["quiz", "true_false"];
+	const SUPPORTED_TYPES = [
+		"quiz",
+		"true_false",
+		"slider",
+		"puzzle",
+		"type_answer",
+		"poll",
+		"word_cloud",
+		"scale",
+		"information"
+	];
 
+	function isQuestionInvalid(q: Question): boolean {
 		if (!q.type || !SUPPORTED_TYPES.includes(q.type)) {
 			return true;
 		}
@@ -71,33 +82,52 @@
 		}
 
 		const options = Array.isArray(q.options) ? q.options : [];
+		// Isolate only the options that the user has actually typed into
+		const filledOptions = options.filter((opt) => (opt.text?.trim() || "").length > 0);
 
-		if (q.type === "true_false") {
-			const correctCount = options.filter((opt) => opt.isCorrect).length;
-			return options.length !== 2 || correctCount !== 1;
+		switch (q.type) {
+			case "true_false": {
+				const correctCount = options.filter((opt) => opt.isCorrect).length;
+				return options.length !== 2 || correctCount !== 1;
+			}
+			case "quiz": {
+				if (filledOptions.length < 2) return true;
+				if (filledOptions.some((opt) => opt.text.trim().length > 100)) return true;
+				const correctCount = filledOptions.filter((opt) => opt.isCorrect).length;
+				if (!q.isMultiSelect && correctCount !== 1) return true;
+				if (q.isMultiSelect && correctCount < 2) return true;
+				return false;
+			}
+			case "poll":
+			case "puzzle": {
+				if (filledOptions.length < 2) return true;
+				if (filledOptions.some((opt) => opt.text.trim().length > 100)) return true;
+				return false;
+			}
+			case "type_answer": {
+				if (filledOptions.length < 1) return true;
+				if (filledOptions.some((opt) => opt.text.trim().length > 100)) return true;
+				return false;
+			}
+			case "slider": {
+				const s = q.settings;
+				if (!s || typeof s.min !== "number" || typeof s.max !== "number") return true;
+				if (typeof s.correctValue !== "number") return true;
+				if (s.min >= s.max) return true;
+				if (s.correctValue < s.min || s.correctValue > s.max) return true;
+				return false;
+			}
+			case "scale": {
+				const s = q.settings;
+				if (!s || typeof s.min !== "number" || typeof s.max !== "number") return true;
+				return s.min >= s.max;
+			}
+			case "word_cloud":
+			case "information":
+				return false;
+			default:
+				return true;
 		}
-
-		if (q.type === "quiz") {
-			// Isolate only the options that the user has actually typed into
-			const filledOptions = options.filter((opt) => {
-				const text = opt.text?.trim() || "";
-				return text.length > 0;
-			});
-
-			// Must have at least 2 filled answers
-			if (filledOptions.length < 2) return true;
-
-			// Check if any filled option exceeds the character limit
-			if (filledOptions.some((opt) => opt.text.trim().length > 100)) return true;
-
-			const correctCount = filledOptions.filter((opt) => opt.isCorrect).length;
-
-			// Validate correct answer constraints based on select mode
-			if (!q.isMultiSelect && correctCount !== 1) return true;
-			if (q.isMultiSelect && correctCount < 2) return true;
-		}
-
-		return false;
 	}
 </script>
 

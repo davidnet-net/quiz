@@ -33,6 +33,13 @@
 	import { page } from "$app/state";
 	import { PUBLIC_ACCOUNT_FRONTEND_URL, PUBLIC_BACKEND_URL } from "$env/static/public";
 	import TrueOrFalse from "$lib/components/QuizEditor/Questions/TrueOrFalse.svelte";
+	import SliderQuestion from "$lib/components/QuizEditor/Questions/SliderQuestion.svelte";
+	import ScaleQuestion from "$lib/components/QuizEditor/Questions/ScaleQuestion.svelte";
+	import TypeAnswerQuestion from "$lib/components/QuizEditor/Questions/TypeAnswerQuestion.svelte";
+	import PollQuestion from "$lib/components/QuizEditor/Questions/PollQuestion.svelte";
+	import WordCloudQuestion from "$lib/components/QuizEditor/Questions/WordCloudQuestion.svelte";
+	import PuzzleQuestion from "$lib/components/QuizEditor/Questions/PuzzleQuestion.svelte";
+	import InformationQuestion from "$lib/components/QuizEditor/Questions/InformationQuestion.svelte";
 	import QuizManager from "$lib/components/QuizEditor/QuizManager.svelte";
 
 	let { params }: PageProps = $props();
@@ -447,6 +454,20 @@
 						question={activeQuestionData}
 						onUpdate={handleQuestionUpdate}
 						onUploadImage={uploadQuestionImage} />
+				{:else if activeQuestionData.type === "slider"}
+					<SliderQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+				{:else if activeQuestionData.type === "scale"}
+					<ScaleQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+				{:else if activeQuestionData.type === "type_answer"}
+					<TypeAnswerQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+				{:else if activeQuestionData.type === "poll"}
+					<PollQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+				{:else if activeQuestionData.type === "word_cloud"}
+					<WordCloudQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+				{:else if activeQuestionData.type === "puzzle"}
+					<PuzzleQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+				{:else if activeQuestionData.type === "information"}
+					<InformationQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
 				{:else}
 					<Flex
 						justifyContent="center"

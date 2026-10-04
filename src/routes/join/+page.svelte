@@ -240,11 +240,16 @@
 		}
 	}
 
-	function handlePlayerSubmit(optionIds: string[]) {
+	function handlePlayerSubmit(answer: Record<string, any>) {
 		if (socket && socket.readyState === WebSocket.OPEN && step === "active") {
-			socket.send(JSON.stringify({ type: "SUBMIT_ANSWER", optionIds }));
+			socket.send(JSON.stringify({ type: "SUBMIT_ANSWER", ...answer }));
 		}
 	}
+
+	const NEUTRAL_RESULT_TYPES = new Set(["poll", "scale", "word_cloud", "information"]);
+	let isNeutralResultType = $derived(
+		NEUTRAL_RESULT_TYPES.has(currentQuestionPayload?.question?.type)
+	);
 </script>
 
 <Flex
@@ -327,20 +332,35 @@
 			{/if}
 		</Flex>
 	{:else if step === "answered"}
-		<h1 style="font-size: 3rem;">Answer Submitted!</h1>
+		<h1 style="font-size: 3rem;">
+			{currentQuestionPayload?.question?.type === "information"
+				? "Great, let's continue!"
+				: "Answer Submitted!"}
+		</h1>
 		<h2 style="color: {token.theme.color.text.secondary}">Waiting for others...</h2>
 	{:else if step === "results"}
-		<div
-			style="width: 100%; height: 100%; background-color: {personalResult?.correct
-				? 'var(--color-success)'
-				: 'var(--color-danger)'}; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;">
-			<h1 style="font-size: 4rem; margin: 0;">
-				{personalResult?.correct ? "Correct!" : "Incorrect"}
-			</h1>
-			{#if personalResult?.correct}
-				<h2 style="font-size: 2rem; margin: 10px 0;">+{personalResult.pointsEarned} Points</h2>
-			{/if}
-		</div>
+		{#if isNeutralResultType}
+			<div
+				style="width: 100%; height: 100%; background-color: {token.theme.color.surface.raised
+					.normal}; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+				<h1 style="font-size: 3rem; margin: 0;">Thanks!</h1>
+				<h2 style="color: {token.theme.color.text.secondary}; margin: 10px 0;">
+					Take a look at the screen for the results.
+				</h2>
+			</div>
+		{:else}
+			<div
+				style="width: 100%; height: 100%; background-color: {personalResult?.correct
+					? 'var(--color-success)'
+					: 'var(--color-danger)'}; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;">
+				<h1 style="font-size: 4rem; margin: 0;">
+					{personalResult?.correct ? "Correct!" : "Incorrect"}
+				</h1>
+				{#if personalResult?.correct}
+					<h2 style="font-size: 2rem; margin: 10px 0;">+{personalResult.pointsEarned} Points</h2>
+				{/if}
+			</div>
+		{/if}
 	{:else if step === "leaderboard"}
 		{@const myRankIndex = currentLeaderboard.findIndex((p) => p.id === participantId)}
 		<h1 style="font-size: 3rem;">Leaderboard</h1>

@@ -29,6 +29,7 @@
 	);
 	let pointsDisplay = $derived(question?.pointsMultiplier === 2 ? "Double points" : "Standard");
 	let answerOptionsDisplay = $derived(question?.isMultiSelect ? "Multi select" : "Single select");
+	let showAnswerOptionsControl = $derived(question?.type === "quiz" || question?.type === "poll");
 
 	const REVEAL_MODE_LABELS: Record<string, string> = {
 		instant: "Instant",
@@ -149,32 +150,34 @@
 				</Dropdown>
 			{/if}
 
-			<Dropdown isOpen={openDropdown === "compact-answer-options"}>
-				{#snippet trigger()}
-					<IconButton
+			{#if showAnswerOptionsControl}
+				<Dropdown isOpen={openDropdown === "compact-answer-options"}>
+					{#snippet trigger()}
+						<IconButton
+							{loading}
+							icon="view_cozy"
+							appearance="default"
+							tip={`Answer options (${answerOptionsDisplay})`}
+							onclick={() =>
+								onDropdownToggle(
+									openDropdown === "compact-answer-options" ? null : "compact-answer-options"
+								)} />
+					{/snippet}
+					<Button {loading} appearance="subtle" alignContent="left" onclick={setSingleSelect}>
+						Single select
+					</Button>
+					<Button
 						{loading}
-						icon="view_cozy"
-						appearance="default"
-						tip={`Answer options (${answerOptionsDisplay})`}
-						onclick={() =>
-							onDropdownToggle(
-								openDropdown === "compact-answer-options" ? null : "compact-answer-options"
-							)} />
-				{/snippet}
-				<Button {loading} appearance="subtle" alignContent="left" onclick={setSingleSelect}>
-					Single select
-				</Button>
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ isMultiSelect: true });
-						onDropdownToggle(null);
-					}}>
-					Multi select
-				</Button>
-			</Dropdown>
+						appearance="subtle"
+						alignContent="left"
+						onclick={() => {
+							onUpdate({ isMultiSelect: true });
+							onDropdownToggle(null);
+						}}>
+						Multi select
+					</Button>
+				</Dropdown>
+			{/if}
 			<br />
 			<br />
 			<IconButton
@@ -286,36 +289,38 @@
 				</Dropdown>
 			{/if}
 
-			<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">
-				<Icon icon="view_cozy" />
-				<span>Answer options</span>
-			</Flex>
-			<Dropdown isOpen={openDropdown === "answer-options"} stretchWidthTrigger>
-				{#snippet trigger()}
+			{#if showAnswerOptionsControl}
+				<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">
+					<Icon icon="view_cozy" />
+					<span>Answer options</span>
+				</Flex>
+				<Dropdown isOpen={openDropdown === "answer-options"} stretchWidthTrigger>
+					{#snippet trigger()}
+						<Button
+							{loading}
+							alignContent="left"
+							stretchwidth
+							appearance="default"
+							onclick={() =>
+								onDropdownToggle(openDropdown === "answer-options" ? null : "answer-options")}>
+							{answerOptionsDisplay}
+						</Button>
+					{/snippet}
+					<Button {loading} appearance="subtle" alignContent="left" onclick={setSingleSelect}>
+						Single select
+					</Button>
 					<Button
 						{loading}
+						appearance="subtle"
 						alignContent="left"
-						stretchwidth
-						appearance="default"
-						onclick={() =>
-							onDropdownToggle(openDropdown === "answer-options" ? null : "answer-options")}>
-						{answerOptionsDisplay}
+						onclick={() => {
+							onUpdate({ isMultiSelect: true });
+							onDropdownToggle(null);
+						}}>
+						Multi select
 					</Button>
-				{/snippet}
-				<Button {loading} appearance="subtle" alignContent="left" onclick={setSingleSelect}>
-					Single select
-				</Button>
-				<Button
-					{loading}
-					appearance="subtle"
-					alignContent="left"
-					onclick={() => {
-						onUpdate({ isMultiSelect: true });
-						onDropdownToggle(null);
-					}}>
-					Multi select
-				</Button>
-			</Dropdown>
+				</Dropdown>
+			{/if}
 
 			<br />
 			<Divider color="tertiary" />
