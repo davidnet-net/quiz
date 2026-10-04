@@ -238,6 +238,10 @@ export function QuizRoom(getQuizId: () => string) {
 	/**
 	 * Moves a question to `newIndex`, interpreted as its desired index in the
 	 * resulting array (i.e. after the question has been removed from its old slot).
+	 *
+	 * A Y type can only ever be integrated into the document once, so the old
+	 * Y.Map can't be deleted and then re-inserted — that silently empties it.
+	 * Instead, clone its entries into a fresh Y.Map and swap that in.
 	 */
 	function moveQuestion(questionId: string | number, newIndex: number) {
 		doc.transact(() => {
@@ -248,9 +252,14 @@ export function QuizRoom(getQuizId: () => string) {
 			const clampedIndex = Math.max(0, Math.min(newIndex, arr.length - 1));
 			if (clampedIndex === fromIndex) return;
 
-			const item = questionsArray.get(fromIndex);
+			const oldMap = arr[fromIndex];
+			const newMap = new Y.Map();
+			oldMap.forEach((value, key) => {
+				newMap.set(key, value);
+			});
+
 			questionsArray.delete(fromIndex, 1);
-			questionsArray.insert(clampedIndex, [item]);
+			questionsArray.insert(clampedIndex, [newMap]);
 		});
 	}
 
