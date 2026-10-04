@@ -25,9 +25,16 @@ function getRandomUserColor() {
 	return USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
 }
 
+const LOADING_UI_DELAY_MS = 5000;
+
 export function QuizRoom(getQuizId: () => string) {
 	const doc = new Y.Doc();
-	let loading = $state(true);
+	// Raw connection state is tracked separately from `showLoading` (the only
+	// one actually exposed): once the room has connected at least once, a
+	// disconnect/reconnect only flips `showLoading` on if it's still ongoing
+	// after LOADING_UI_DELAY_MS, so brief reconnects don't blank the page --
+	// the already-synced Yjs doc keeps rendering while it reconnects quietly.
+	let showLoading = $state(true);
 	let socket = $state<WebSocket | null>(null);
 
 	const awareness = new awarenessProtocol.Awareness(doc);
@@ -57,6 +64,37 @@ export function QuizRoom(getQuizId: () => string) {
 		let reconnectTimeout: ReturnType<typeof setTimeout>;
 		let reconnectAttempts = 0;
 
+		let isConnected = false;
+		let hasLoadedOnce = false;
+		let loadingDelayTimer: ReturnType<typeof setTimeout> | null = null;
+
+		function setConnected(connected: boolean) {
+			isConnected = connected;
+
+			if (connected) {
+				hasLoadedOnce = true;
+				if (loadingDelayTimer) {
+					clearTimeout(loadingDelayTimer);
+					loadingDelayTimer = null;
+				}
+				showLoading = false;
+				return;
+			}
+
+			if (!hasLoadedOnce) {
+				// Nothing cached to fall back on yet: show loading right away.
+				showLoading = true;
+				return;
+			}
+
+			if (!loadingDelayTimer) {
+				loadingDelayTimer = setTimeout(() => {
+					loadingDelayTimer = null;
+					if (!isConnected) showLoading = true;
+				}, LOADING_UI_DELAY_MS);
+			}
+		}
+
 		fetch(httpUrl, { credentials: "include" })
 			.then((res) => {
 				if (res.status === 403) return goto(`/manage/${quizId}/no_access`);
@@ -77,7 +115,7 @@ export function QuizRoom(getQuizId: () => string) {
 
 			ws.onopen = () => {
 				console.log("[Quiz Editor] Connected to YJS room");
-				loading = false;
+				setConnected(true);
 				reconnectAttempts = 0;
 
 				const currentState = awareness.getLocalState() || {};
@@ -130,7 +168,7 @@ export function QuizRoom(getQuizId: () => string) {
 					throw error(404, "Quiz not found");
 				}
 
-				loading = true;
+				setConnected(false);
 				const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
 				reconnectAttempts++;
 				console.log(`[Quiz Editor] Connection lost. Reconnecting in ${delay}ms...`);
@@ -186,6 +224,7 @@ export function QuizRoom(getQuizId: () => string) {
 		return () => {
 			isIntentionallyClosed = true;
 			clearTimeout(reconnectTimeout);
+			if (loadingDelayTimer) clearTimeout(loadingDelayTimer);
 			doc.off("update", syncState);
 			awareness.off("change", syncAwarenessState);
 			awarenessProtocol.removeAwarenessStates(awareness, [doc.clientID], "client closed");
@@ -268,7 +307,7 @@ export function QuizRoom(getQuizId: () => string) {
 			return doc;
 		},
 		get loading() {
-			return loading;
+			return showLoading;
 		},
 		get socket() {
 			return socket;
