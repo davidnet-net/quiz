@@ -456,19 +456,40 @@
 						onUpdate={handleQuestionUpdate}
 						onUploadImage={uploadQuestionImage} />
 				{:else if activeQuestionData.type === "slider"}
-					<SliderQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+					<SliderQuestion
+						question={activeQuestionData}
+						onUpdate={handleQuestionUpdate}
+						onUploadImage={uploadQuestionImage} />
 				{:else if activeQuestionData.type === "scale"}
-					<ScaleQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+					<ScaleQuestion
+						question={activeQuestionData}
+						onUpdate={handleQuestionUpdate}
+						onUploadImage={uploadQuestionImage} />
 				{:else if activeQuestionData.type === "type_answer"}
-					<TypeAnswerQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+					<TypeAnswerQuestion
+						question={activeQuestionData}
+						onUpdate={handleQuestionUpdate}
+						onUploadImage={uploadQuestionImage} />
 				{:else if activeQuestionData.type === "poll"}
-					<PollQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+					<PollQuestion
+						question={activeQuestionData}
+						onUpdate={handleQuestionUpdate}
+						onUploadImage={uploadQuestionImage} />
 				{:else if activeQuestionData.type === "word_cloud"}
-					<WordCloudQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+					<WordCloudQuestion
+						question={activeQuestionData}
+						onUpdate={handleQuestionUpdate}
+						onUploadImage={uploadQuestionImage} />
 				{:else if activeQuestionData.type === "puzzle"}
-					<PuzzleQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+					<PuzzleQuestion
+						question={activeQuestionData}
+						onUpdate={handleQuestionUpdate}
+						onUploadImage={uploadQuestionImage} />
 				{:else if activeQuestionData.type === "information"}
-					<InformationQuestion question={activeQuestionData} onUpdate={handleQuestionUpdate} />
+					<InformationQuestion
+						question={activeQuestionData}
+						onUpdate={handleQuestionUpdate}
+						onUploadImage={uploadQuestionImage} />
 				{:else}
 					<Flex
 						justifyContent="center"
