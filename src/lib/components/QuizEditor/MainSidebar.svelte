@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { Avatar, Button, Flex, IconButton, Skeleton } from "@davidnet-net/svelte-ui";
-	import * as styles from "./Sidebar.css.ts";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
+
+	import * as styles from "./Sidebar.css.ts";
 
 	/**
 	 * Represents a single answer option for a question.

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Flex, Button, TextField, IconButton } from "@davidnet-net/svelte-ui";
+	import { Button, Flex, IconButton, TextField } from "@davidnet-net/svelte-ui";
+
 	import * as styles from "./PlayerQuestion.css";
 
 	let { payload, onsubmit }: { payload: any; onsubmit: (answer: Record<string, any>) => void } =

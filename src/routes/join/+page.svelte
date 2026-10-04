@@ -3,17 +3,18 @@
 	import {
 		appState,
 		Button,
-		Flex,
 		Field,
-		TextField,
+		Flex,
+		type iconType,
 		navigateBack,
-		toast,
-		type iconType
+		TextField,
+		toast
 	} from "@davidnet-net/svelte-ui";
-	import CodeInput from "$lib/components/CodeInput/CodeInput.svelte";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
+
 	import { page } from "$app/state";
 	import { PUBLIC_BACKEND_URL } from "$env/static/public";
+	import CodeInput from "$lib/components/CodeInput/CodeInput.svelte";
 	import PlayerQuestion from "$lib/components/QuizPlayer/PlayerQuestion.svelte";
 
 	let step = $state<

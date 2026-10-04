@@ -3,44 +3,45 @@
 	import {
 		appState,
 		authState,
-		identityState,
 		Avatar,
 		Button,
 		Flex,
+		getFetch,
+		hasPermission,
 		Icon,
+		IconButton,
+		identityState,
 		LinkButton,
+		putFetch,
 		Skeleton,
+		syncWorkspaceAccess,
+		toast,
 		useShortcut,
 		VisuallyHidden,
-		whenAuthReady,
-		getFetch,
-		toast,
-		IconButton,
-		hasPermission,
-		syncWorkspaceAccess,
-		putFetch
+		whenAuthReady
 	} from "@davidnet-net/svelte-ui";
-	import * as styles from "./page.css.ts";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 
-	import MainSidebar from "$lib/components/QuizEditor/MainSidebar.svelte";
-	import QuestionSidebar from "$lib/components/QuizEditor/QuestionSidebar.svelte";
-	import NewQuestionModal from "$lib/components/QuizEditor/NewQuestionModal.svelte";
-	import MultipleChoice from "$lib/components/QuizEditor/Questions/MultipleChoiceQuestion.svelte";
-	import LoadingQuestion from "$lib/components/QuizEditor/Questions/LoadingQuestion.svelte";
-	import type { PageProps } from "./$types";
-	import { QuizRoom } from "$lib/quizEditor/QuizRoom.svelte";
 	import { page } from "$app/state";
 	import { PUBLIC_ACCOUNT_FRONTEND_URL, PUBLIC_BACKEND_URL } from "$env/static/public";
-	import TrueOrFalse from "$lib/components/QuizEditor/Questions/TrueOrFalse.svelte";
-	import SliderQuestion from "$lib/components/QuizEditor/Questions/SliderQuestion.svelte";
-	import ScaleQuestion from "$lib/components/QuizEditor/Questions/ScaleQuestion.svelte";
-	import TypeAnswerQuestion from "$lib/components/QuizEditor/Questions/TypeAnswerQuestion.svelte";
-	import PollQuestion from "$lib/components/QuizEditor/Questions/PollQuestion.svelte";
-	import WordCloudQuestion from "$lib/components/QuizEditor/Questions/WordCloudQuestion.svelte";
-	import PuzzleQuestion from "$lib/components/QuizEditor/Questions/PuzzleQuestion.svelte";
+	import MainSidebar from "$lib/components/QuizEditor/MainSidebar.svelte";
+	import NewQuestionModal from "$lib/components/QuizEditor/NewQuestionModal.svelte";
 	import InformationQuestion from "$lib/components/QuizEditor/Questions/InformationQuestion.svelte";
+	import LoadingQuestion from "$lib/components/QuizEditor/Questions/LoadingQuestion.svelte";
+	import MultipleChoice from "$lib/components/QuizEditor/Questions/MultipleChoiceQuestion.svelte";
+	import PollQuestion from "$lib/components/QuizEditor/Questions/PollQuestion.svelte";
+	import PuzzleQuestion from "$lib/components/QuizEditor/Questions/PuzzleQuestion.svelte";
+	import ScaleQuestion from "$lib/components/QuizEditor/Questions/ScaleQuestion.svelte";
+	import SliderQuestion from "$lib/components/QuizEditor/Questions/SliderQuestion.svelte";
+	import TrueOrFalse from "$lib/components/QuizEditor/Questions/TrueOrFalse.svelte";
+	import TypeAnswerQuestion from "$lib/components/QuizEditor/Questions/TypeAnswerQuestion.svelte";
+	import WordCloudQuestion from "$lib/components/QuizEditor/Questions/WordCloudQuestion.svelte";
+	import QuestionSidebar from "$lib/components/QuizEditor/QuestionSidebar.svelte";
 	import QuizManager from "$lib/components/QuizEditor/QuizManager.svelte";
+	import { QuizRoom } from "$lib/quizEditor/QuizRoom.svelte";
+
+	import type { PageProps } from "./$types";
+	import * as styles from "./page.css.ts";
 
 	let { params }: PageProps = $props();
 

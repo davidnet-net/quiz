@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button, Divider, Dropdown, Flex, Icon, IconButton } from "@davidnet-net/svelte-ui";
+
 	import * as styles from "./Sidebar.css.ts";
 
 	let {
