@@ -17,6 +17,7 @@
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 	import { onMount } from "svelte";
 	import { PUBLIC_BACKEND_URL } from "$env/static/public";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let invites = $state<any[]>([]);
 	let loading = $state(true);
@@ -58,8 +59,8 @@
 			);
 			if (res && res.success) {
 				toast(
-					"Invite accepted",
-					"You are now a collaborator on this quiz.",
+					m.page_invites_toast_accepted_title(),
+					m.page_invites_toast_accepted_content(),
 					"check",
 					3000,
 					"success"
@@ -68,7 +69,7 @@
 			}
 		} catch (err) {
 			console.error("Failed to accept invite:", err);
-			toast("Error", "Failed to accept invite.", "error", 3000, "danger");
+			toast(m.common_error_title(), m.page_invites_toast_accept_failed(), "error", 3000, "danger");
 		}
 	}
 
@@ -84,12 +85,18 @@
 				true
 			);
 			if (res && res.success) {
-				toast("Invite declined", "You have declined the quiz invitation.", "close", 3000, "subtle");
+				toast(
+					m.page_invites_toast_declined_title(),
+					m.page_invites_toast_declined_content(),
+					"close",
+					3000,
+					"subtle"
+				);
 				invites = invites.filter((inv) => inv.quizId !== quizId);
 			}
 		} catch (err) {
 			console.error("Failed to deny invite:", err);
-			toast("Error", "Failed to deny invite.", "error", 3000, "danger");
+			toast(m.common_error_title(), m.page_invites_toast_deny_failed(), "error", 3000, "danger");
 		}
 	}
 
@@ -120,8 +127,8 @@
 	style="width: 100%; max-width: 48rem; margin: 0 auto; box-sizing: border-box; padding: 2rem 1rem;">
 	<Flex alignItems="start" justifyContent="start" direction="column" gap="large" width="100%">
 		<Flex justifyContent="between" alignItems="center" width="100%">
-			<h1>Quiz invitations</h1>
-			<LinkButton appearance="default" href="/manage">Back to quizes</LinkButton>
+			<h1>{m.page_invites_heading()}</h1>
+			<LinkButton appearance="default" href="/manage">{m.page_invites_back_link()}</LinkButton>
 		</Flex>
 
 		<Flex direction="column" gap="medium" width="100%">
@@ -139,16 +146,17 @@
 						flexWrap="wrap">
 						<Flex direction="column" gap="xsmall">
 							<span style="font-weight: 600; font-size: {token.global.font.size.large};">
-								{invite.quizName || "Untitled Quiz"}
+								{invite.quizName || m.page_invites_untitled_quiz()}
 							</span>
-							<span style="opacity: 0.7; font-size: 13px;">Invited to collaborate</span>
+							<span style="opacity: 0.7; font-size: 13px;">{m.page_invites_invited_label()}</span>
 						</Flex>
 
 						<Flex gap="small" alignItems="center">
 							<Button appearance="primary" onclick={() => acceptInvite(invite.quizId)}>
-								Accept
+								{m.page_invites_accept()}
 							</Button>
-							<Button appearance="danger" onclick={() => denyInvite(invite.quizId)}>Deny</Button>
+							<Button appearance="danger" onclick={() => denyInvite(invite.quizId)}
+								>{m.page_invites_deny()}</Button>
 						</Flex>
 					</Flex>
 				{/each}
@@ -161,7 +169,7 @@
 					style="width: 100%; padding: 3rem 0; text-align: center;">
 					<Icon icon="mail" size="giant" />
 					<span style="opacity: 0.7; font-size: {token.global.font.size.medium};">
-						You have no pending quiz invitations.
+						{m.page_invites_empty()}
 					</span>
 				</Flex>
 			{/if}

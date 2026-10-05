@@ -10,6 +10,7 @@
 		TextField
 	} from "@davidnet-net/svelte-ui";
 	import * as styles from "./MultipleChoiceQuestion.css";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let {
 		question,
@@ -102,11 +103,11 @@
 	justifyContent="spaceAround"
 	style="width: 100%;">
 	<div class={styles.questionContainer}>
-		<Field label="Question" name="question" overidelabel style="width: 100%;">
+		<Field label={m.editor_question_label()} name="question" overidelabel style="width: 100%;">
 			<TextArea
 				value={question?.text || ""}
 				oninput={(e) => onUpdate({ text: (e.target as HTMLTextAreaElement).value })}
-				placeholder="Start typing your question..."
+				placeholder={m.editor_generic_question_placeholder()}
 				maxlength={250}
 				headless
 				style="background: transparent; border: none; text-align: center; width: 100%; outline: none; color: inherit; font-family: inherit; font-size: inherit; resize: none; word-break: break-word; overflow-wrap: break-word;" />
@@ -127,7 +128,7 @@
 					onRemove={clearMedia} />
 				{#if !question?.mediaUrl}
 					<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
-						Cancel
+						{m.common_cancel()}
 					</Button>
 				{/if}
 			</Flex>
@@ -145,9 +146,9 @@
 							mediaUrl: (e.target as HTMLInputElement).value,
 							mediaType: "youtube"
 						})}
-					placeholder="Paste a YouTube URL..." />
+					placeholder={m.editor_media_youtube_placeholder()} />
 				<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
-					Remove video
+					{m.editor_media_remove_video()}
 				</Button>
 			</Flex>
 		{:else}
@@ -158,13 +159,13 @@
 						appearance="subtle"
 						iconbefore="add_photo_alternate"
 						onclick={() => onUpdate({ mediaType: "image", mediaUrl: null })}>
-						Add image
+						{m.editor_media_add_image()}
 					</Button>
 					<Button
 						appearance="subtle"
 						iconbefore="smart_display"
 						onclick={() => onUpdate({ mediaType: "youtube", mediaUrl: null })}>
-						Embed YouTube
+						{m.editor_media_embed_youtube()}
 					</Button>
 				</Flex>
 			</Flex>
@@ -180,7 +181,7 @@
 						style="background-color: {options[i].bg}; border: 1px solid {options[i]
 							.color}; padding: 1rem; box-sizing: border-box;">
 						<Field
-							label={`Answer ${i + 1}`}
+							label={m.editor_answer_label({ num: i + 1 })}
 							name={`answer_${i}`}
 							overidelabel
 							style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
@@ -192,15 +193,15 @@
 										onchange={(e: Event) =>
 											updateOption(i, { isCorrect: (e.currentTarget as HTMLInputElement).checked })}
 										title={options[i].text.trim() === ""
-											? "Type an answer first"
-											: "Mark as correct answer"} />
+											? m.editor_type_answer_first_tip()
+											: m.common_mark_correct_tip()} />
 								</div>
 
 								<TextArea
 									value={options[i].text}
 									oninput={(e) =>
 										updateOption(i, { text: (e.target as HTMLTextAreaElement).value })}
-									placeholder={`Add answer ${i + 1}...`}
+									placeholder={m.editor_answer_placeholder({ num: i + 1 })}
 									maxlength={100}
 									headless
 									maxRows={4}

@@ -10,6 +10,7 @@
 		TextField
 	} from "@davidnet-net/svelte-ui";
 	import * as styles from "./TrueOrFalse.css";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let {
 		question,
@@ -25,14 +26,14 @@
 	const defaultOptions = [
 		{
 			id: "true",
-			text: "True",
+			text: m.editor_true_false_option_true(),
 			isCorrect: false,
 			color: "rgba(59, 130, 246, 1)",
 			bg: "rgba(59, 130, 246, 0.25)"
 		},
 		{
 			id: "false",
-			text: "False",
+			text: m.editor_true_false_option_false(),
 			isCorrect: false,
 			color: "rgba(239, 68, 68, 1)",
 			bg: "rgba(239, 68, 68, 0.25)"
@@ -86,11 +87,11 @@
 	justifyContent="spaceAround"
 	style="width: 100%;">
 	<div class={styles.questionContainer}>
-		<Field label="Question" name="question" overidelabel style="width: 100%;">
+		<Field label={m.editor_question_label()} name="question" overidelabel style="width: 100%;">
 			<TextArea
 				value={question?.text || ""}
 				oninput={(e) => onUpdate({ text: (e.target as HTMLTextAreaElement).value })}
-				placeholder="Start typing your True or False question..."
+				placeholder={m.editor_true_false_placeholder()}
 				maxlength={250}
 				headless
 				style="background: transparent; border: none; text-align: center; width: 100%; outline: none; color: inherit; font-family: inherit; font-size: inherit; resize: none; word-break: break-word; overflow-wrap: break-word;" />
@@ -111,7 +112,7 @@
 					onRemove={clearMedia} />
 				{#if !question?.mediaUrl}
 					<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
-						Cancel
+						{m.common_cancel()}
 					</Button>
 				{/if}
 			</Flex>
@@ -129,9 +130,9 @@
 							mediaUrl: (e.target as HTMLInputElement).value,
 							mediaType: "youtube"
 						})}
-					placeholder="Paste a YouTube URL..." />
+					placeholder={m.editor_media_youtube_placeholder()} />
 				<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
-					Remove video
+					{m.editor_media_remove_video()}
 				</Button>
 			</Flex>
 		{:else}
@@ -142,13 +143,13 @@
 						appearance="subtle"
 						iconbefore="add_photo_alternate"
 						onclick={() => onUpdate({ mediaType: "image", mediaUrl: null })}>
-						Add image
+						{m.editor_media_add_image()}
 					</Button>
 					<Button
 						appearance="subtle"
 						iconbefore="smart_display"
 						onclick={() => onUpdate({ mediaType: "youtube", mediaUrl: null })}>
-						Embed YouTube
+						{m.editor_media_embed_youtube()}
 					</Button>
 				</Flex>
 			</Flex>
@@ -166,7 +167,7 @@
 						checked={option.isCorrect}
 						onchange={(e: Event) =>
 							updateCorrectAnswer(i, (e.currentTarget as HTMLInputElement).checked)}
-						title="Mark as correct answer" />
+						title={m.common_mark_correct_tip()} />
 				</div>
 
 				<span>{option.text}</span>

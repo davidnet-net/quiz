@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { appState, Button, currentTheme, Flex, Modal } from "@davidnet-net/svelte-ui";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
+	import * as m from "$lib/paraglide/messages.js";
 
 	// SVGs
 	import multipleChoiceDark from "$lib/assets/quizimages/multiple-choice-dark.svg";
@@ -36,71 +37,71 @@
 	const questionTypes = [
 		{
 			id: "quiz",
-			name: "Multiple choice",
-			desc: "Classic multi-option question",
+			name: m.newq_type_mc_name(),
+			desc: m.newq_type_mc_desc(),
 			dark: multipleChoiceDark,
 			light: multipleChoiceLight
 		},
 		{
 			id: "true_false",
-			name: "True / False",
-			desc: "Simple binary choice",
+			name: m.newq_type_tf_name(),
+			desc: m.newq_type_tf_desc(),
 			dark: trueFalseDark,
 			light: trueFalseLight
 		},
 		{
 			id: "slider",
-			name: "Slider",
-			desc: "Numeric sliding scale",
+			name: m.newq_type_slider_name(),
+			desc: m.newq_type_slider_desc(),
 			dark: sliderDark,
 			light: sliderLight
 		},
 		{
 			id: "puzzle",
-			name: "Puzzle",
-			desc: "Order or sequence items",
+			name: m.newq_type_puzzle_name(),
+			desc: m.newq_type_puzzle_desc(),
 			dark: puzzleDark,
 			light: puzzleLight
 		},
 		{
 			id: "type_answer",
-			name: "Type answer",
-			desc: "Short text input match",
+			name: m.newq_type_typeanswer_name(),
+			desc: m.newq_type_typeanswer_desc(),
 			dark: typeAnswerDark,
 			light: typeAnswerLight
 		},
 		{
 			id: "poll",
-			name: "Poll",
-			desc: "Gather feedback or votes",
+			name: m.newq_type_poll_name(),
+			desc: m.newq_type_poll_desc(),
 			dark: pollDark,
 			light: pollLight
 		},
 		{
 			id: "word_cloud",
-			name: "Word cloud",
-			desc: "Open text aggregation",
+			name: m.newq_type_wordcloud_name(),
+			desc: m.newq_type_wordcloud_desc(),
 			dark: wordCloudDark,
 			light: wordCloudLight
 		},
 		{
 			id: "scale",
-			name: "Scale",
-			desc: "Rating scale evaluation",
+			name: m.newq_type_scale_name(),
+			desc: m.newq_type_scale_desc(),
 			dark: scaleDark,
 			light: scaleLight
 		},
 		{
 			id: "information",
-			name: "Information",
-			desc: "Display info slide",
+			name: m.newq_type_information_name(),
+			desc: m.newq_type_information_desc(),
 			dark: informationDark,
 			light: informationLight
 		}
 	];
 </script>
 
-<Modal title="Choose question type" onclose={handleNewQuestionSelection}>
+<Modal title={m.newq_modal_title()} onclose={handleNewQuestionSelection}>
 	<Flex flexWrap="wrap" gap="medium" justifyContent="center" overflowY="scroll">
 		{#each questionTypes as type}
 			<button
@@ -135,7 +136,7 @@
 			onclick={() => {
 				handleNewQuestionSelection();
 			}}>
-			Cancel
+			{m.common_cancel()}
 		</Button>
 	{/snippet}
 </Modal>

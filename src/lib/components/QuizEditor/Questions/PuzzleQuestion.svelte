@@ -12,6 +12,7 @@
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 
 	import * as styles from "./SharedQuestion.css";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let {
 		question,
@@ -79,11 +80,11 @@
 	justifyContent="spaceAround"
 	style="width: 100%;">
 	<div class={styles.questionContainer}>
-		<Field label="Question" name="question" overidelabel style="width: 100%;">
+		<Field label={m.editor_question_label()} name="question" overidelabel style="width: 100%;">
 			<TextArea
 				value={question?.text || ""}
 				oninput={(e) => onUpdate({ text: (e.target as HTMLTextAreaElement).value })}
-				placeholder="Start typing your puzzle instructions..."
+				placeholder={m.editor_puzzle_placeholder()}
 				maxlength={250}
 				headless
 				style="background: transparent; border: none; text-align: center; width: 100%; outline: none; color: inherit; font-family: inherit; font-size: inherit; resize: none; word-break: break-word; overflow-wrap: break-word;" />
@@ -104,7 +105,7 @@
 					onRemove={clearMedia} />
 				{#if !question?.mediaUrl}
 					<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
-						Cancel
+						{m.common_cancel()}
 					</Button>
 				{/if}
 			</Flex>
@@ -122,9 +123,9 @@
 							mediaUrl: (e.target as HTMLInputElement).value,
 							mediaType: "youtube"
 						})}
-					placeholder="Paste a YouTube URL..." />
+					placeholder={m.editor_media_youtube_placeholder()} />
 				<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
-					Remove video
+					{m.editor_media_remove_video()}
 				</Button>
 			</Flex>
 		{:else}
@@ -135,13 +136,13 @@
 						appearance="subtle"
 						iconbefore="add_photo_alternate"
 						onclick={() => onUpdate({ mediaType: "image", mediaUrl: null })}>
-						Add image
+						{m.editor_media_add_image()}
 					</Button>
 					<Button
 						appearance="subtle"
 						iconbefore="smart_display"
 						onclick={() => onUpdate({ mediaType: "youtube", mediaUrl: null })}>
-						Embed YouTube
+						{m.editor_media_embed_youtube()}
 					</Button>
 				</Flex>
 			</Flex>
@@ -149,8 +150,7 @@
 	</div>
 
 	<p style="color: {token.theme.color.text.secondary};">
-		List the items in the correct order. Players see them shuffled and must put them back in this
-		order.
+		{m.editor_puzzle_note()}
 	</p>
 
 	<div class={styles.listContainer}>
@@ -162,22 +162,22 @@
 				<TextField
 					value={option.text}
 					maxlength={100}
-					placeholder={`Item ${i + 1}...`}
+					placeholder={m.editor_item_placeholder({ num: i + 1 })}
 					oninput={(e) => updateOptionText(i, (e.target as HTMLInputElement).value)}
 					style="width: 100%;" />
 				<IconButton
 					icon="arrow_upward"
-					tip="Move up"
+					tip={m.common_move_up_tip()}
 					disabled={i === 0}
 					onclick={() => moveOption(i, -1)} />
 				<IconButton
 					icon="arrow_downward"
-					tip="Move down"
+					tip={m.common_move_down_tip()}
 					disabled={i === options.length - 1}
 					onclick={() => moveOption(i, 1)} />
 				<IconButton
 					icon="close"
-					tip="Remove item"
+					tip={m.editor_remove_item_tip()}
 					disabled={options.length <= MIN_ITEMS}
 					onclick={() => removeOption(i)} />
 			</div>
@@ -187,7 +187,7 @@
 			appearance="default"
 			disabled={options.length >= MAX_ITEMS}
 			onclick={addOption}>
-			Add item
+			{m.editor_add_item()}
 		</Button>
 	</div>
 </Flex>

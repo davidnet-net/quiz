@@ -3,6 +3,7 @@
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 
 	import * as styles from "./Sidebar.css.ts";
+	import * as m from "$lib/paraglide/messages.js";
 
 	/**
 	 * Represents a single answer option for a question.
@@ -225,9 +226,9 @@
 				{loading}
 				icon="add"
 				appearance="primary"
-				tip="Add question"
+				tip={m.sidebar_add_question_tip()}
 				onclick={onNewQuestion} />
-			<IconButton icon="left_panel_open" tip="Open sidebar" onclick={onToggle} />
+			<IconButton icon="left_panel_open" tip={m.sidebar_open_tip()} onclick={onToggle} />
 		</Flex>
 	</div>
 {:else}
@@ -275,7 +276,7 @@
 						ondragend={resetDrag}
 						onclick={() => onSelectQuestion(q.id)}>
 						<Flex direction="row" justifyContent="between" height="fit-content">
-							<span class={styles.questionCardText}>Question {index + 1}</span>
+							<span class={styles.questionCardText}>{m.sidebar_question_label({ num: index + 1 })}</span>
 
 							{#if usersOnThisQuestion.length > 0}
 								<div style="display: flex; align-items: center; pointer-events: none;">
@@ -296,7 +297,7 @@
 								</div>
 							{/if}
 						</Flex>
-						<p class={styles.questionCardTitle}>{q.text || "Empty question."}</p>
+						<p class={styles.questionCardTitle}>{q.text || m.sidebar_empty_question()}</p>
 					</button>
 				{/each}
 			{/if}
@@ -308,9 +309,9 @@
 				style="width: 81% !important;"
 				{loading}
 				onclick={onNewQuestion}>
-				New question
+				{m.sidebar_new_question_button()}
 			</Button>
-			<IconButton icon="left_panel_close" tip="Close sidebar" onclick={onToggle} />
+			<IconButton icon="left_panel_close" tip={m.sidebar_close_tip()} onclick={onToggle} />
 		</Flex>
 	</div>
 {/if}

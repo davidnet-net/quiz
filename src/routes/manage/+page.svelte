@@ -27,6 +27,7 @@
 	} from "@davidnet-net/svelte-ui";
 	import { onMount } from "svelte";
 	import * as styles from "./page.css";
+	import * as m from "$lib/paraglide/messages.js";
 	import type { Quiz } from "$lib/types/quizes";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 
@@ -139,7 +140,7 @@
 	let targetDropdownOpen = $state(false);
 	let selectedTarget = $state<{ id: string | null; name: string }>({
 		id: null,
-		name: "Workspace-wide"
+		name: m.page_manage_workspace_wide()
 	});
 
 	let showNewQuizModal = $state(false);
@@ -158,8 +159,8 @@
 
 		if (!isAllowed) {
 			toast(
-				"Not allowed",
-				"You are not allowed to create quizzes in this context.",
+				m.page_manage_toast_not_allowed_title(),
+				m.page_manage_toast_not_allowed_content(),
 				"rule",
 				5000,
 				"danger"
@@ -176,7 +177,13 @@
 		const res = await postFetch(endpoint, { name: newQuizName.trim() }, undefined, true);
 
 		if (res && res.success) {
-			toast("Quiz created!", `Created "${newQuizName}" successfully.`, "check", 3000, "success");
+			toast(
+				m.page_manage_toast_created_title(),
+				m.page_manage_toast_created_content({ name: newQuizName }),
+				"check",
+				3000,
+				"success"
+			);
 
 			if (res.quiz) {
 				quizes = [res.quiz, ...quizes];
@@ -200,7 +207,7 @@
 		const res = await patchFetch(endpoint, { name: quizRenameValue.trim() }, undefined, true);
 
 		if (res && res.success) {
-			toast("Updated!", "Quiz name updated successfully.", "check", 3000, "success");
+			toast(m.common_updated_title(), m.common_quiz_name_updated_content(), "check", 3000, "success");
 			quizes = quizes.map((q) =>
 				q.id === quizToRename?.id ? { ...q, name: quizRenameValue.trim() } : q
 			);
@@ -220,7 +227,13 @@
 		const res = await deleteFetch(endpoint, undefined, undefined, true);
 
 		if (res && res.success) {
-			toast("Deleted!", `Quiz "${quiz.name}" was deleted.`, "delete", 3000, "success");
+			toast(
+				m.page_manage_toast_deleted_title(),
+				m.page_manage_toast_deleted_content({ name: quiz.name }),
+				"delete",
+				3000,
+				"success"
+			);
 			quizes = quizes.filter((q) => q.id !== quiz.id);
 		}
 
@@ -235,7 +248,13 @@
 		const res = await deleteFetch(endpoint, undefined, undefined, true);
 
 		if (res && res.success) {
-			toast("Removed", `You left collaboration on "${quiz.name}".`, "check", 3000, "success");
+			toast(
+				m.page_manage_toast_removed_title(),
+				m.page_manage_toast_left_collab({ name: quiz.name }),
+				"check",
+				3000,
+				"success"
+			);
 			sharedQuizzes = sharedQuizzes.filter((q) => q.id !== quiz.id);
 		}
 
@@ -247,20 +266,23 @@
 <div style="padding: {token.global.spacing.giant}">
 	{#if currentWorkspace?.name && !loading}
 		<Flex justifyContent="between" height="fit-content" alignItems="center" gap="small">
-			<h1>{currentWorkspace?.name} quizes:</h1>
+			<h1>{m.page_manage_quizzes_heading({ name: currentWorkspace?.name ?? "" })}</h1>
 			<Flex height="fit-content" width="fit-content" gap="small">
-				<LinkButton appearance="default" href="/manage/invites">View invites</LinkButton>
+				<LinkButton appearance="default" href="/manage/invites">{m.page_manage_view_invites_link()}</LinkButton>
 				{#if canCreateQuizAnywhere}
 					<Button
 						appearance="primary"
 						iconbefore="add"
 						onclick={() => {
 							selectedTarget = canCreateQuizOrgWide
-								? { id: null, name: "Workspace-wide" }
-								: { id: firstAllowedTeam?.id || null, name: firstAllowedTeam?.name || "Unknown" };
+								? { id: null, name: m.page_manage_workspace_wide() }
+								: {
+										id: firstAllowedTeam?.id || null,
+										name: firstAllowedTeam?.name || m.page_manage_unknown_team()
+									};
 							showNewQuizModal = true;
 						}}>
-						New quiz
+						{m.page_manage_new_quiz_button()}
 					</Button>
 				{/if}
 			</Flex>
@@ -285,7 +307,7 @@
 							{#snippet trigger()}
 								<IconButton
 									icon="more_vert"
-									tip="Options"
+									tip={m.page_manage_options_tip()}
 									onclick={() => {
 										openQuizDropdownId = openQuizDropdownId === quiz.id ? null : quiz.id;
 									}} />
@@ -303,7 +325,7 @@
 											quizRenameValue = quiz.name;
 										}, 0);
 									}}>
-									Rename quiz
+									{m.page_manage_rename_quiz()}
 								</Button>
 							{/if}
 
@@ -318,15 +340,15 @@
 											quizToDelete = quiz;
 										}, 0);
 									}}>
-									Delete quiz
+									{m.page_manage_delete_quiz()}
 								</Button>
 							{/if}
 						</Dropdown>
 					</Flex>
 					<Flex justifyContent="end" height="fit-content" alignItems="center" gap="small">
-						<LinkButton href={`/manage/${quiz.id}/edit`}>Edit quiz</LinkButton>
+						<LinkButton href={`/manage/${quiz.id}/edit`}>{m.page_manage_edit_quiz_link()}</LinkButton>
 						<LinkButton appearance="primary" href={`/present/${quiz.id}`} {loading}>
-							Present quiz
+							{m.common_present_quiz_link()}
 						</LinkButton>
 					</Flex>
 				</div>
@@ -340,10 +362,11 @@
 					alignItems="start"
 					gap="small">
 					<span class={styles.quizName}>
-						{currentWorkspace?.type === "personal" ? "You do" : `${currentWorkspace?.name} does`} not
-						have any quizes yet.
+						{currentWorkspace?.type === "personal"
+							? m.page_manage_no_quizzes_personal()
+							: m.page_manage_no_quizzes_team({ name: currentWorkspace?.name ?? "" })}
 					</span>
-					<p>Start by creating one</p>
+					<p>{m.page_manage_start_creating()}</p>
 				</Flex>
 				<Flex justifyContent="end" height="fit-content" alignItems="center" gap="small">
 					{#if canCreateQuizAnywhere}
@@ -352,11 +375,14 @@
 							iconbefore="add"
 							onclick={() => {
 								selectedTarget = canCreateQuizOrgWide
-									? { id: null, name: "Workspace-wide" }
-									: { id: firstAllowedTeam?.id || null, name: firstAllowedTeam?.name || "Unknown" };
+									? { id: null, name: m.page_manage_workspace_wide() }
+									: {
+											id: firstAllowedTeam?.id || null,
+											name: firstAllowedTeam?.name || m.page_manage_unknown_team()
+										};
 								showNewQuizModal = true;
 							}}>
-							New quiz
+							{m.page_manage_new_quiz_button()}
 						</Button>
 					{/if}
 				</Flex>
@@ -366,7 +392,7 @@
 
 	<!-- SECTION 2: SHARED WITH YOU -->
 	<br />
-	<h2>Shared with you:</h2>
+	<h2>{m.page_manage_shared_heading()}</h2>
 	<Flex flexWrap="wrap" gap="medium">
 		{#if loading}
 			<Skeleton height="10rem" width="22rem" />
@@ -380,7 +406,7 @@
 							{#snippet trigger()}
 								<IconButton
 									icon="more_vert"
-									tip="Options"
+									tip={m.page_manage_options_tip()}
 									onclick={() => {
 										openQuizDropdownId = openQuizDropdownId === quiz.id ? null : quiz.id;
 									}} />
@@ -396,12 +422,12 @@
 										quizToStopCollab = quiz;
 									}, 0);
 								}}>
-								Stop collaborating
+								{m.page_manage_stop_collaborating()}
 							</Button>
 						</Dropdown>
 					</Flex>
 					<Flex justifyContent="end" height="fit-content" alignItems="center" gap="small">
-						<LinkButton href={`/manage/${quiz.id}/edit`}>Edit quiz</LinkButton>
+						<LinkButton href={`/manage/${quiz.id}/edit`}>{m.page_manage_edit_quiz_link()}</LinkButton>
 					</Flex>
 				</div>
 			{/each}
@@ -413,11 +439,11 @@
 					direction="column"
 					alignItems="start"
 					gap="small">
-					<span class={styles.quizName}>No quizzes have been shared with you yet.</span>
-					<p>Quizzes shared by others will appear here.</p>
+					<span class={styles.quizName}>{m.page_manage_no_shared()}</span>
+					<p>{m.page_manage_shared_will_appear()}</p>
 				</Flex>
 				<Flex justifyContent="end" height="fit-content" alignItems="center" gap="small">
-					<LinkButton appearance="default" href="/manage/invites">View invites</LinkButton>
+					<LinkButton appearance="default" href="/manage/invites">{m.page_manage_view_invites_link()}</LinkButton>
 				</Flex>
 			</div>
 		{/if}
@@ -426,7 +452,7 @@
 	<!-- Create Quiz Modal -->
 	{#if showNewQuizModal}
 		<Modal
-			title="New quiz"
+			title={m.page_manage_new_quiz_modal_title()}
 			onclose={() => {
 				if (quizCreating) return;
 				showNewQuizModal = false;
@@ -439,11 +465,11 @@
 					createQuiz();
 				}}>
 				<Flex direction="column" gap="medium">
-					<Field label="Quiz name:" name="quizName">
+					<Field label={m.common_quiz_name_label()} name="quizName">
 						<TextField maxlength={30} bind:value={newQuizName} disabled={quizCreating} />
 					</Field>
 
-					<Field label="Create in:" name="quizTarget">
+					<Field label={m.page_manage_create_in_label()} name="quizTarget">
 						<Dropdown isOpen={targetDropdownOpen}>
 							{#snippet trigger()}
 								<Button
@@ -462,10 +488,10 @@
 									type="button"
 									appearance="subtle"
 									onclick={() => {
-										selectedTarget = { id: null, name: "Workspace-wide" };
+										selectedTarget = { id: null, name: m.page_manage_workspace_wide() };
 										targetDropdownOpen = false;
 									}}>
-									Workspace-wide
+									{m.page_manage_workspace_wide()}
 								</Button>
 							{/if}
 
@@ -495,7 +521,7 @@
 					onclick={() => {
 						showNewQuizModal = false;
 					}}>
-					Cancel
+					{m.common_cancel()}
 				</Button>
 				<Button
 					appearance="primary"
@@ -503,7 +529,7 @@
 					loading={quizCreating}
 					form="new-quiz"
 					type="submit">
-					Create
+					{m.page_manage_create_button()}
 				</Button>
 			{/snippet}
 		</Modal>
@@ -512,7 +538,7 @@
 	<!-- Rename Quiz Modal -->
 	{#if quizToRename}
 		<Modal
-			title="Rename quiz"
+			title={m.page_manage_rename_modal_title()}
 			onclose={() => {
 				if (quizRenaming) return;
 				quizToRename = null;
@@ -524,7 +550,7 @@
 					e.preventDefault();
 					renameQuiz();
 				}}>
-				<Field label="New quiz name:" name="renameQuizName">
+				<Field label={m.page_manage_new_quiz_name_label()} name="renameQuizName">
 					<TextField maxlength={30} bind:value={quizRenameValue} disabled={quizRenaming} />
 				</Field>
 			</Form>
@@ -535,7 +561,7 @@
 					onclick={() => {
 						quizToRename = null;
 					}}>
-					Cancel
+					{m.common_cancel()}
 				</Button>
 				<Button
 					appearance="primary"
@@ -543,7 +569,7 @@
 					loading={quizRenaming}
 					form="rename-quiz"
 					type="submit">
-					Save changes
+					{m.common_save_changes()}
 				</Button>
 			{/snippet}
 		</Modal>
@@ -552,15 +578,15 @@
 	<!-- Delete Confirmation Modal -->
 	{#if quizToDelete}
 		<Modal
-			title="Delete quiz"
+			title={m.page_manage_delete_modal_title()}
 			onclose={() => {
 				if (quizDeleting) return;
 				quizToDelete = null;
 			}}>
 			<p onclick={(e) => e.stopPropagation()}>
-				Are you sure you want to delete the quiz
+				{m.page_manage_delete_confirm()}
 				<strong>{quizToDelete.name}</strong>
-				? This action cannot be undone.
+				{m.page_manage_delete_confirm_suffix()}
 			</p>
 			<br />
 			{#snippet actions()}
@@ -569,13 +595,13 @@
 					onclick={() => {
 						quizToDelete = null;
 					}}>
-					Cancel
+					{m.common_cancel()}
 				</Button>
 				<Button
 					appearance="danger"
 					loading={quizDeleting}
 					onclick={() => deleteQuiz(quizToDelete!)}>
-					Delete quiz
+					{m.page_manage_delete_quiz()}
 				</Button>
 			{/snippet}
 		</Modal>
@@ -584,15 +610,15 @@
 	<!-- Stop Collaborating Confirmation Modal -->
 	{#if quizToStopCollab}
 		<Modal
-			title="Stop collaborating"
+			title={m.page_manage_stop_collab_modal_title()}
 			onclose={() => {
 				if (quizStoppingCollab) return;
 				quizToStopCollab = null;
 			}}>
 			<p onclick={(e) => e.stopPropagation()}>
-				Are you sure you want to stop collaborating on
+				{m.page_manage_stop_collab_confirm()}
 				<strong>{quizToStopCollab.name}</strong>
-				? You will lose access to edit this quiz.
+				{m.page_manage_stop_collab_confirm_suffix()}
 			</p>
 			<br />
 			{#snippet actions()}
@@ -601,13 +627,13 @@
 					onclick={() => {
 						quizToStopCollab = null;
 					}}>
-					Cancel
+					{m.common_cancel()}
 				</Button>
 				<Button
 					appearance="danger"
 					loading={quizStoppingCollab}
 					onclick={() => stopCollaborating(quizToStopCollab!)}>
-					Stop collaborating
+					{m.page_manage_stop_collaborating()}
 				</Button>
 			{/snippet}
 		</Modal>

@@ -2,6 +2,7 @@
 	import { Button, Flex, IconButton, TextField } from "@davidnet-net/svelte-ui";
 
 	import * as styles from "./PlayerQuestion.css";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let { payload, onsubmit }: { payload: any; onsubmit: (answer: Record<string, any>) => void } =
 		$props();
@@ -101,7 +102,7 @@
 		direction="column"
 		style="width: 100%; height: 100%;">
 		<h1 style="margin-bottom: 2rem;">
-			{isMultiSelect ? "Select all that apply" : "Select the correct answer"}
+			{isMultiSelect ? m.player_select_all_that_apply() : m.player_select_correct_answer()}
 		</h1>
 
 		<div
@@ -128,7 +129,7 @@
                 "
 					onclick={() => handleBlockClick(option.id)}
 					disabled={submitted}
-					aria-label="Select answer">
+					aria-label={m.player_select_answer_alt()}>
 				</button>
 			{/each}
 		</div>
@@ -139,7 +140,7 @@
 					appearance="primary"
 					onclick={submitSelection}
 					disabled={selectedIds.length === 0 || submitted}>
-					Submit Answer
+					{m.player_submit_answer()}
 				</Button>
 			</div>
 		{/if}
@@ -151,7 +152,7 @@
 		alignItems="center"
 		direction="column"
 		style="width: 100%; height: 100%;">
-		<h1 style="margin-bottom: 2rem;">Pick a rating</h1>
+		<h1 style="margin-bottom: 2rem;">{m.player_pick_rating()}</h1>
 		<div class={styles.wrapContainer} style="height: auto; justify-content: center;">
 			{#each Array.from({ length: settings.max - settings.min + 1 }, (_, i) => settings.min + i) as value}
 				<Button
@@ -173,7 +174,7 @@
 		alignItems="center"
 		direction="column"
 		style="width: 100%; height: 100%;">
-		<h1>Drag to your answer</h1>
+		<h1>{m.player_drag_to_answer()}</h1>
 		<h2 style="font-size: 3rem; margin: 1rem 0;">{sliderValue}</h2>
 		<input
 			type="range"
@@ -186,7 +187,7 @@
 			style="width: 80%;" />
 		<div style="margin-top: 2rem;">
 			<Button appearance="primary" onclick={submitSlider} disabled={submitted}>
-				Submit Answer
+				{m.player_submit_answer()}
 			</Button>
 		</div>
 	</Flex>
@@ -197,16 +198,16 @@
 		direction="column"
 		style="width: 100%; height: 100%;">
 		<h1 style="margin-bottom: 1rem;">
-			{type === "word_cloud" ? "Type a word or short phrase" : "Type your answer"}
+			{type === "word_cloud" ? m.player_type_word_or_phrase() : m.player_type_your_answer()}
 		</h1>
 		<div class={styles.inputContainer}>
 			<TextField
 				bind:value={textValue}
 				disabled={submitted}
 				maxlength={type === "word_cloud" ? 40 : 200}
-				placeholder="Your answer..." />
+				placeholder={m.player_answer_placeholder()} />
 			<Button appearance="primary" onclick={submitText} disabled={!textValue.trim() || submitted}>
-				Submit Answer
+				{m.player_submit_answer()}
 			</Button>
 		</div>
 	</Flex>
@@ -216,7 +217,7 @@
 		alignItems="center"
 		direction="column"
 		style="width: 100%; height: 100%;">
-		<h1 style="margin-bottom: 1rem;">Put them in the right order</h1>
+		<h1 style="margin-bottom: 1rem;">{m.player_put_in_order()}</h1>
 		<div class={styles.inputContainer}>
 			{#each puzzleOrder as item, i (item.id)}
 				<div class={styles.puzzleRow}>
@@ -224,17 +225,18 @@
 					<span style="flex: 1;">{item.text}</span>
 					<IconButton
 						icon="arrow_upward"
-						tip="Move up"
+						tip={m.common_move_up_tip()}
 						disabled={submitted || i === 0}
 						onclick={() => movePuzzleItem(i, -1)} />
 					<IconButton
 						icon="arrow_downward"
-						tip="Move down"
+						tip={m.common_move_down_tip()}
 						disabled={submitted || i === puzzleOrder.length - 1}
 						onclick={() => movePuzzleItem(i, 1)} />
 				</div>
 			{/each}
-			<Button appearance="primary" onclick={submitPuzzle} disabled={submitted}>Submit Order</Button>
+			<Button appearance="primary" onclick={submitPuzzle} disabled={submitted}
+				>{m.player_submit_order()}</Button>
 		</div>
 	</Flex>
 {:else if type === "information"}
@@ -244,7 +246,7 @@
 		direction="column"
 		style="width: 100%; height: 100%;"
 		text="center">
-		<h1>Take a look at the screen!</h1>
-		<p>No answer is needed for this slide.</p>
+		<h1>{m.player_take_a_look()}</h1>
+		<p>{m.player_no_answer_needed()}</p>
 	</Flex>
 {/if}

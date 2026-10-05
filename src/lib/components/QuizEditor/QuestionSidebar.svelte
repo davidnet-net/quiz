@@ -2,6 +2,7 @@
 	import { Button, Divider, Dropdown, Flex, Icon, IconButton } from "@davidnet-net/svelte-ui";
 
 	import * as styles from "./Sidebar.css.ts";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let {
 		question,
@@ -26,19 +27,23 @@
 	} = $props();
 
 	let timeLimitDisplay = $derived(
-		question?.timeLimit ? `${question.timeLimit} seconds` : "20 seconds"
+		m.sidebar_seconds_option({ num: question?.timeLimit ? question.timeLimit : 20 })
 	);
-	let pointsDisplay = $derived(question?.pointsMultiplier === 2 ? "Double points" : "Standard");
-	let answerOptionsDisplay = $derived(question?.isMultiSelect ? "Multi select" : "Single select");
+	let pointsDisplay = $derived(
+		question?.pointsMultiplier === 2 ? m.sidebar_double_points() : m.sidebar_standard_points()
+	);
+	let answerOptionsDisplay = $derived(
+		question?.isMultiSelect ? m.sidebar_multi_select() : m.sidebar_single_select()
+	);
 	let showAnswerOptionsControl = $derived(question?.type === "quiz" || question?.type === "poll");
 
 	const REVEAL_MODE_LABELS: Record<string, string> = {
-		instant: "Instant",
-		fade: "Fade in",
-		blur: "Blur reveal",
-		slide: "Slide in"
+		instant: m.sidebar_reveal_instant(),
+		fade: m.sidebar_reveal_fade(),
+		blur: m.sidebar_reveal_blur(),
+		slide: m.sidebar_reveal_slide()
 	};
-	let revealModeDisplay = $derived(REVEAL_MODE_LABELS[question?.revealMode] ?? "Instant");
+	let revealModeDisplay = $derived(REVEAL_MODE_LABELS[question?.revealMode] ?? m.sidebar_reveal_instant());
 	let hasImage = $derived(question?.mediaType === "image");
 
 	/**
@@ -79,7 +84,7 @@
 						{loading}
 						icon="schedule"
 						appearance="default"
-						tip={`Time limit (${timeLimitDisplay})`}
+						tip={m.sidebar_time_limit_tip({ display: timeLimitDisplay })}
 						onclick={() =>
 							onDropdownToggle(
 								openDropdown === "compact-time-limit" ? null : "compact-time-limit"
@@ -94,7 +99,7 @@
 							onUpdate({ timeLimit: time });
 							onDropdownToggle(null);
 						}}>
-						{time} seconds
+						{m.sidebar_seconds_option({ num: time })}
 					</Button>
 				{/each}
 			</Dropdown>
@@ -105,11 +110,11 @@
 						{loading}
 						icon="workspace_premium"
 						appearance="default"
-						tip={`Points (${pointsDisplay})`}
+						tip={m.sidebar_points_tip({ display: pointsDisplay })}
 						onclick={() =>
 							onDropdownToggle(openDropdown === "compact-points" ? null : "compact-points")} />
 				{/snippet}
-				{#each [{ label: "Standard", value: 1 }, { label: "Double points", value: 2 }] as point}
+				{#each [{ label: m.sidebar_standard_points(), value: 1 }, { label: m.sidebar_double_points(), value: 2 }] as point}
 					<Button
 						{loading}
 						appearance="subtle"
@@ -130,7 +135,7 @@
 							{loading}
 							icon="animation"
 							appearance="default"
-							tip={`Reveal mode (${revealModeDisplay})`}
+							tip={m.sidebar_reveal_mode_tip({ display: revealModeDisplay })}
 							onclick={() =>
 								onDropdownToggle(
 									openDropdown === "compact-reveal-mode" ? null : "compact-reveal-mode"
@@ -158,14 +163,14 @@
 							{loading}
 							icon="view_cozy"
 							appearance="default"
-							tip={`Answer options (${answerOptionsDisplay})`}
+							tip={m.sidebar_answer_options_tip({ display: answerOptionsDisplay })}
 							onclick={() =>
 								onDropdownToggle(
 									openDropdown === "compact-answer-options" ? null : "compact-answer-options"
 								)} />
 					{/snippet}
 					<Button {loading} appearance="subtle" alignContent="left" onclick={setSingleSelect}>
-						Single select
+						{m.sidebar_single_select()}
 					</Button>
 					<Button
 						{loading}
@@ -175,7 +180,7 @@
 							onUpdate({ isMultiSelect: true });
 							onDropdownToggle(null);
 						}}>
-						Multi select
+						{m.sidebar_multi_select()}
 					</Button>
 				</Dropdown>
 			{/if}
@@ -185,16 +190,16 @@
 				{loading}
 				icon="control_point_duplicate"
 				appearance="default"
-				tip="Duplicate"
+				tip={m.sidebar_duplicate()}
 				onclick={onDuplicate} />
 			<IconButton
 				{loading}
 				icon="delete_forever"
 				appearance="default"
-				tip="Delete question"
+				tip={m.sidebar_delete_question()}
 				onclick={onDelete} />
 		</div>
-		<IconButton icon="right_panel_open" tip="Open sidebar" onclick={onToggle} />
+		<IconButton icon="right_panel_open" tip={m.sidebar_open_tip()} onclick={onToggle} />
 	</div>
 {:else}
 	<div class={styles.sidebar}>
@@ -202,7 +207,7 @@
 			style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start; width: 100%; flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 8px;">
 			<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">
 				<Icon icon="schedule" />
-				<span>Time limit</span>
+				<span>{m.sidebar_time_limit_label()}</span>
 			</Flex>
 			<Dropdown isOpen={openDropdown === "time-limit"} stretchWidthTrigger>
 				{#snippet trigger()}
@@ -224,14 +229,14 @@
 							onUpdate({ timeLimit: time });
 							onDropdownToggle(null);
 						}}>
-						{time} seconds
+						{m.sidebar_seconds_option({ num: time })}
 					</Button>
 				{/each}
 			</Dropdown>
 
 			<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">
 				<Icon icon="workspace_premium" />
-				<span>Points</span>
+				<span>{m.sidebar_points_label()}</span>
 			</Flex>
 			<Dropdown isOpen={openDropdown === "points"} stretchWidthTrigger>
 				{#snippet trigger()}
@@ -244,7 +249,7 @@
 						{pointsDisplay}
 					</Button>
 				{/snippet}
-				{#each [{ label: "Standard", value: 1 }, { label: "Double points", value: 2 }] as point}
+				{#each [{ label: m.sidebar_standard_points(), value: 1 }, { label: m.sidebar_double_points(), value: 2 }] as point}
 					<Button
 						{loading}
 						appearance="subtle"
@@ -261,7 +266,7 @@
 			{#if hasImage}
 				<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">
 					<Icon icon="animation" />
-					<span>Reveal mode</span>
+					<span>{m.sidebar_reveal_mode_label()}</span>
 				</Flex>
 				<Dropdown isOpen={openDropdown === "reveal-mode"} stretchWidthTrigger>
 					{#snippet trigger()}
@@ -293,7 +298,7 @@
 			{#if showAnswerOptionsControl}
 				<Flex width="fit-content" height="fit-content" gap="xsmall" alignItems="center">
 					<Icon icon="view_cozy" />
-					<span>Answer options</span>
+					<span>{m.sidebar_answer_options_label()}</span>
 				</Flex>
 				<Dropdown isOpen={openDropdown === "answer-options"} stretchWidthTrigger>
 					{#snippet trigger()}
@@ -308,7 +313,7 @@
 						</Button>
 					{/snippet}
 					<Button {loading} appearance="subtle" alignContent="left" onclick={setSingleSelect}>
-						Single select
+						{m.sidebar_single_select()}
 					</Button>
 					<Button
 						{loading}
@@ -318,7 +323,7 @@
 							onUpdate({ isMultiSelect: true });
 							onDropdownToggle(null);
 						}}>
-						Multi select
+						{m.sidebar_multi_select()}
 					</Button>
 				</Dropdown>
 			{/if}
@@ -327,14 +332,14 @@
 			<Divider color="tertiary" />
 			<br />
 			<Button {loading} alignContent="left" stretchwidth appearance="default" onclick={onDuplicate}>
-				Duplicate
+				{m.sidebar_duplicate()}
 			</Button>
 			<Button {loading} alignContent="left" stretchwidth appearance="default" onclick={onDelete}>
-				Delete question
+				{m.sidebar_delete_question()}
 			</Button>
 		</div>
 		<div>
-			<IconButton icon="right_panel_close" tip="Close sidebar" onclick={onToggle} />
+			<IconButton icon="right_panel_close" tip={m.sidebar_close_tip()} onclick={onToggle} />
 		</div>
 	</div>
 {/if}

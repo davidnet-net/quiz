@@ -16,6 +16,7 @@
 	import { getFetch, postFetch, deleteFetch, patchFetch } from "@davidnet-net/svelte-ui";
 	import { PUBLIC_BACKEND_URL } from "$env/static/public";
 	import { onMount } from "svelte";
+	import * as m from "$lib/paraglide/messages.js";
 
 	const currentWorkspace = $derived(getCurrentWorkspace());
 
@@ -56,13 +57,13 @@
 
 			if (res && res.success) {
 				onUpdateName(nameValue.trim());
-				toast("Updated!", "Quiz name updated successfully.", "check", 3000, "success");
+				toast(m.common_updated_title(), m.common_quiz_name_updated_content(), "check", 3000, "success");
 			} else {
-				toast("Error", res?.error || "Failed to update quiz name.", "error", 4000, "danger");
+				toast(m.common_error_title(), res?.error || m.qm_toast_update_name_failed(), "error", 4000, "danger");
 			}
 		} catch (err) {
 			console.error("Failed to update quiz name:", err);
-			toast("Error", "Failed to update quiz name.", "error", 4000, "danger");
+			toast(m.common_error_title(), m.qm_toast_update_name_failed(), "error", 4000, "danger");
 		} finally {
 			isSaving = false;
 		}
@@ -135,8 +136,8 @@
 
 			if (!profileRes || !profileRes.success || !profileRes.profileResponse?.userId) {
 				toast(
-					"User not found",
-					`Could not find a user with username "@${username}".`,
+					m.qm_toast_user_not_found_title(),
+					m.qm_toast_user_not_found_content({ username }),
 					"error",
 					4000,
 					"danger"
@@ -155,22 +156,28 @@
 			);
 
 			if (res && res.success) {
-				toast("Invite sent!", `Invitation sent to @${username}.`, "check", 3000, "success");
+				toast(
+					m.qm_toast_invite_sent_title(),
+					m.qm_toast_invite_sent_content({ username }),
+					"check",
+					3000,
+					"success"
+				);
 				newCollaboratorUsername = "";
 				await loadCollaborators();
 			} else {
-				let errorMsg = res?.error || "Failed to send invite.";
+				let errorMsg = res?.error || m.qm_toast_send_invite_failed();
 				if (res?.code === "CANNOT_INVITE_SELF") {
-					errorMsg = "You cannot invite yourself to your own quiz.";
+					errorMsg = m.qm_error_cannot_invite_self();
 				} else if (res?.code === "COLLABORATOR_ALREADY_EXISTS") {
-					errorMsg = "This user is already a collaborator or has a pending invite.";
+					errorMsg = m.qm_error_already_collaborator();
 				}
 
-				toast("Error", errorMsg, "error", 4000, "danger");
+				toast(m.common_error_title(), errorMsg, "error", 4000, "danger");
 			}
 		} catch (err) {
 			console.error("Failed to send invite:", err);
-			toast("Error", "Failed to send invite.", "error", 4000, "danger");
+			toast(m.common_error_title(), m.qm_toast_send_invite_failed(), "error", 4000, "danger");
 		} finally {
 			addingCollaborator = false;
 		}
@@ -187,8 +194,8 @@
 			);
 			if (res && res.success) {
 				toast(
-					isInvite ? "Invite cancelled" : "Collaborator removed",
-					isInvite ? "Invitation has been cancelled." : "Collaborator has been removed.",
+					isInvite ? m.qm_toast_invite_cancelled_title() : m.qm_toast_collaborator_removed_title(),
+					isInvite ? m.qm_toast_invite_cancelled_content() : m.qm_toast_collaborator_removed_content(),
 					"check",
 					3000,
 					"success"
@@ -198,23 +205,23 @@
 			}
 		} catch (err) {
 			console.error("Failed to perform action:", err);
-			toast("Error", "Failed to perform action.", "error", 4000, "danger");
+			toast(m.common_error_title(), m.qm_toast_action_failed(), "error", 4000, "danger");
 		}
 	}
 </script>
 
 <Tabs bind:selected={activeTab}>
-	<Modal title={`Manage quiz: ${nameValue}`} {onclose}>
+	<Modal title={m.qm_modal_title({ name: nameValue })} {onclose}>
 		<Flex direction="column" gap="medium">
 			<Flex direction="row" gap="small" height="fit-content" width="fit-content">
-				<Tab value="general">General</Tab>
-				<Tab value="collaborators">Collaborators & Invites</Tab>
+				<Tab value="general">{m.qm_tab_general()}</Tab>
+				<Tab value="collaborators">{m.qm_tab_collaborators()}</Tab>
 			</Flex>
 
 			<TabPanel value="general">
 				<Form id="manage-quiz-form" onsubmit={handleSubmit} style="width: 100%;">
 					<Flex direction="column" gap="small" width="100%">
-						<Field label="Quiz name:" name="quizName">
+						<Field label={m.common_quiz_name_label()} name="quizName">
 							<Flex direction="row" gap="small" alignItems="center" width="100%">
 								<TextField maxlength={30} bind:value={nameValue} disabled={isSaving} width="100%" />
 								<Button
@@ -223,7 +230,7 @@
 									loading={isSaving}
 									form="manage-quiz-form"
 									type="submit">
-									Save
+									{m.common_save()}
 								</Button>
 							</Flex>
 						</Field>
@@ -235,10 +242,10 @@
 				<Flex direction="column" gap="large" width="100%">
 					<!-- Send Invite Section -->
 					<Flex direction="column" gap="small" width="100%">
-						<span style="font-weight: 600;">Invite collaborator</span>
+						<span style="font-weight: 600;">{m.qm_invite_collaborator_label()}</span>
 						<Flex direction="row" gap="small" alignItems="center" width="100%">
 							<TextField
-								placeholder="Enter username (e.g. john)"
+								placeholder={m.qm_username_placeholder()}
 								bind:value={newCollaboratorUsername}
 								disabled={addingCollaborator}
 								width="100%" />
@@ -247,20 +254,20 @@
 								disabled={!newCollaboratorUsername.trim()}
 								loading={addingCollaborator}
 								onclick={sendInvite}>
-								Send invite
+								{m.qm_send_invite_button()}
 							</Button>
 						</Flex>
 					</Flex>
 
 					<!-- Collaborators List -->
 					<Flex direction="column" gap="small" width="100%">
-						<span style="font-weight: 600;">Collaborators</span>
+						<span style="font-weight: 600;">{m.qm_collaborators_label()}</span>
 						<Flex
 							direction="column"
 							gap="small"
 							style="max-height: 120px; overflow-y: auto; width: 100%;">
 							{#if loadingCollaborators}
-								<span>Loading collaborators...</span>
+								<span>{m.qm_loading_collaborators()}</span>
 							{:else if collaborators.length > 0}
 								{#each collaborators as collab (collab.userId)}
 									<Flex
@@ -281,25 +288,25 @@
 										<Button
 											appearance="danger"
 											onclick={() => removeCollaborator(collab.userId, false)}>
-											Remove
+											{m.qm_remove_button()}
 										</Button>
 									</Flex>
 								{/each}
 							{:else}
-								<span style="opacity: 0.7; font-size: 13px;">No active collaborators.</span>
+								<span style="opacity: 0.7; font-size: 13px;">{m.qm_no_active_collaborators()}</span>
 							{/if}
 						</Flex>
 					</Flex>
 
 					<!-- Invited People (Pending) List -->
 					<Flex direction="column" gap="small" width="100%">
-						<span style="font-weight: 600;">Invited people (Pending)</span>
+						<span style="font-weight: 600;">{m.qm_invited_people_label()}</span>
 						<Flex
 							direction="column"
 							gap="small"
 							style="max-height: 120px; overflow-y: auto; width: 100%;">
 							{#if loadingCollaborators}
-								<span>Loading invites...</span>
+								<span>{m.qm_loading_invites()}</span>
 							{:else if invitedPeople.length > 0}
 								{#each invitedPeople as invite (invite.userId)}
 									<Flex
@@ -320,12 +327,12 @@
 										<Button
 											appearance="danger"
 											onclick={() => removeCollaborator(invite.userId, true)}>
-											Cancel invite
+											{m.qm_cancel_invite_button()}
 										</Button>
 									</Flex>
 								{/each}
 							{:else}
-								<span style="opacity: 0.7; font-size: 13px;">No pending invites.</span>
+								<span style="opacity: 0.7; font-size: 13px;">{m.qm_no_pending_invites()}</span>
 							{/if}
 						</Flex>
 					</Flex>
@@ -334,7 +341,7 @@
 		</Flex>
 
 		{#snippet actions()}
-			<Button disabled={isSaving} onclick={onclose}>Close</Button>
+			<Button disabled={isSaving} onclick={onclose}>{m.common_close()}</Button>
 		{/snippet}
 	</Modal>
 </Tabs>

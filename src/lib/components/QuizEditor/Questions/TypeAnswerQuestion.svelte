@@ -11,6 +11,7 @@
 	} from "@davidnet-net/svelte-ui";
 
 	import * as styles from "./SharedQuestion.css";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let {
 		question,
@@ -69,11 +70,11 @@
 	justifyContent="spaceAround"
 	style="width: 100%;">
 	<div class={styles.questionContainer}>
-		<Field label="Question" name="question" overidelabel style="width: 100%;">
+		<Field label={m.editor_question_label()} name="question" overidelabel style="width: 100%;">
 			<TextArea
 				value={question?.text || ""}
 				oninput={(e) => onUpdate({ text: (e.target as HTMLTextAreaElement).value })}
-				placeholder="Start typing your question..."
+				placeholder={m.editor_generic_question_placeholder()}
 				maxlength={250}
 				headless
 				style="background: transparent; border: none; text-align: center; width: 100%; outline: none; color: inherit; font-family: inherit; font-size: inherit; resize: none; word-break: break-word; overflow-wrap: break-word;" />
@@ -94,7 +95,7 @@
 					onRemove={clearMedia} />
 				{#if !question?.mediaUrl}
 					<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
-						Cancel
+						{m.common_cancel()}
 					</Button>
 				{/if}
 			</Flex>
@@ -112,9 +113,9 @@
 							mediaUrl: (e.target as HTMLInputElement).value,
 							mediaType: "youtube"
 						})}
-					placeholder="Paste a YouTube URL..." />
+					placeholder={m.editor_media_youtube_placeholder()} />
 				<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
-					Remove video
+					{m.editor_media_remove_video()}
 				</Button>
 			</Flex>
 		{:else}
@@ -125,13 +126,13 @@
 						appearance="subtle"
 						iconbefore="add_photo_alternate"
 						onclick={() => onUpdate({ mediaType: "image", mediaUrl: null })}>
-						Add image
+						{m.editor_media_add_image()}
 					</Button>
 					<Button
 						appearance="subtle"
 						iconbefore="smart_display"
 						onclick={() => onUpdate({ mediaType: "youtube", mediaUrl: null })}>
-						Embed YouTube
+						{m.editor_media_embed_youtube()}
 					</Button>
 				</Flex>
 			</Flex>
@@ -144,12 +145,12 @@
 				<TextField
 					value={option.text}
 					maxlength={100}
-					placeholder={`Accepted answer ${i + 1}...`}
+					placeholder={m.editor_accepted_answer_placeholder({ num: i + 1 })}
 					oninput={(e) => updateOptionText(i, (e.target as HTMLInputElement).value)}
 					style="width: 100%;" />
 				<IconButton
 					icon="close"
-					tip="Remove answer"
+					tip={m.editor_remove_answer_tip()}
 					disabled={options.length <= 1}
 					onclick={() => removeOption(i)} />
 			</div>
@@ -159,7 +160,7 @@
 			appearance="default"
 			disabled={options.length >= MAX_ANSWERS}
 			onclick={addOption}>
-			Add accepted answer
+			{m.editor_add_accepted_answer()}
 		</Button>
 	</div>
 </Flex>

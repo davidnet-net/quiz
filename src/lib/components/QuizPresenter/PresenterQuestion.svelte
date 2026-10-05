@@ -3,6 +3,7 @@
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 
 	import * as styles from "./PresenterQuestion.css";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let {
 		payload,
@@ -100,7 +101,7 @@
 						<IconButton
 							icon="volume_off"
 							appearance="default"
-							tip="Unmute"
+							tip={m.presenter_unmute_tip()}
 							onclick={() => (videoMuted = false)} />
 					</div>
 				{/if}
@@ -179,8 +180,10 @@
 	{:else if type === "scale"}
 		{#if !showResults}
 			<p style="color: {token.theme.color.text.secondary}; font-size: 1.5rem;">
-				Rate from {scaleSettings.min}{scaleSettings.minLabel ? ` (${scaleSettings.minLabel})` : ""}
-				to {scaleSettings.max}{scaleSettings.maxLabel ? ` (${scaleSettings.maxLabel})` : ""}
+				{m.presenter_rate_from({
+					min: `${scaleSettings.min}${scaleSettings.minLabel ? ` (${scaleSettings.minLabel})` : ''}`,
+					max: `${scaleSettings.max}${scaleSettings.maxLabel ? ` (${scaleSettings.maxLabel})` : ''}`
+				})}
 			</p>
 		{:else}
 			<div class={styles.histogramContainer}>
@@ -200,12 +203,12 @@
 	{:else if type === "slider"}
 		{#if !showResults}
 			<p style="color: {token.theme.color.text.secondary}; font-size: 1.5rem;">
-				Players are dragging a slider between {sliderSettings.min} and {sliderSettings.max}...
+				{m.presenter_slider_dragging({ min: sliderSettings.min, max: sliderSettings.max })}
 			</p>
 		{:else}
 			<p style="font-size: 1.25rem;">
-				Correct value: <b>{sliderSettings.correctValue}</b>
-				{#if sliderSettings.tolerance}(+/- {sliderSettings.tolerance}){/if}
+				{m.presenter_correct_value_label()} <b>{sliderSettings.correctValue}</b>
+				{#if sliderSettings.tolerance}{m.presenter_tolerance_suffix({ tolerance: sliderSettings.tolerance })}{/if}
 			</p>
 			<div class={styles.histogramContainer}>
 				{#each sliderEntries as entry}
@@ -223,11 +226,11 @@
 	{:else if type === "type_answer"}
 		{#if !showResults}
 			<p style="color: {token.theme.color.text.secondary}; font-size: 1.5rem;">
-				Players are typing their answer...
+				{m.presenter_typing_answer()}
 			</p>
 		{:else}
 			<p style="font-size: 1.1rem;">
-				Accepted answers: <b>{options.map((o: any) => o.text).join(", ")}</b>
+				{m.presenter_accepted_answers_label()} <b>{options.map((o: any) => o.text).join(", ")}</b>
 			</p>
 			<div class={styles.answerContainer}>
 				{#each textEntries as [text, count]}
@@ -241,7 +244,7 @@
 	{:else if type === "word_cloud"}
 		{#if !showResults}
 			<p style="color: {token.theme.color.text.secondary}; font-size: 1.5rem;">
-				Players are submitting words...
+				{m.presenter_submitting_words()}
 			</p>
 		{:else}
 			<div class={styles.wordCloudContainer}>
@@ -262,7 +265,7 @@
 				{/each}
 			</div>
 		{:else}
-			<p style="font-size: 1.1rem;">Correct order:</p>
+			<p style="font-size: 1.1rem;">{m.presenter_correct_order_label()}</p>
 			<div class={styles.answerContainer}>
 				{#each correctOrderItems as item, i}
 					<div class={styles.listRow}>
@@ -273,9 +276,9 @@
 			</div>
 			<p style="font-size: 1.1rem;">
 				<span style="color: var(--color-success); font-weight: bold;">{puzzleCorrectCount}</span>
-				correct ·
+				{m.presenter_correct_word()} ·
 				<span style="color: var(--color-danger); font-weight: bold;">{puzzleIncorrectCount}</span>
-				incorrect
+				{m.presenter_incorrect_word()}
 			</p>
 		{/if}
 	{/if}

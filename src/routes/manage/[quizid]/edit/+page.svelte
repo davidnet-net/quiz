@@ -42,6 +42,7 @@
 
 	import type { PageProps } from "./$types";
 	import * as styles from "./page.css.ts";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let { params }: PageProps = $props();
 
@@ -171,10 +172,10 @@
 
 		for (const [uid, clientState] of currentRemoteUsers.entries()) {
 			if (!previousUsers.has(uid)) {
-				const resolvedName = userProfiles[uid]?.displayName || clientState.user?.name || "Someone";
+				const resolvedName = userProfiles[uid]?.displayName || clientState.user?.name || m.editpage_someone();
 				toast(
-					`${resolvedName} joined editing.`,
-					"You can work together live.",
+					m.editpage_joined_editing_toast({ name: resolvedName }),
+					m.editpage_joined_editing_content(),
 					"waving_hand",
 					6000,
 					"subtle"
@@ -184,8 +185,8 @@
 
 		for (const uid of previousUsers) {
 			if (!currentRemoteUsers.has(uid)) {
-				const resolvedName = userProfiles[uid]?.displayName || "Someone";
-				toast(`${resolvedName} stopped editing.`, "", "waving_hand", 6000, "subtle");
+				const resolvedName = userProfiles[uid]?.displayName || m.editpage_someone();
+				toast(m.editpage_stopped_editing_toast({ name: resolvedName }), "", "waving_hand", 6000, "subtle");
 			}
 		}
 
@@ -222,18 +223,18 @@
 		mainSidebarOpened = !appState.isMobile;
 
 		useShortcut("ctrl+]", () => (questionSidebarOpened = !questionSidebarOpened), {
-			name: "Toggle right sidebar",
-			description: "Toggle right sidebar.",
+			name: m.editpage_shortcut_toggle_right_name(),
+			description: m.editpage_shortcut_toggle_right_desc(),
 			preventDefault: true
 		});
 		useShortcut("ctrl+[", () => (mainSidebarOpened = !mainSidebarOpened), {
-			name: "Toggle left sidebar",
-			description: "Toggle left sidebar.",
+			name: m.editpage_shortcut_toggle_left_name(),
+			description: m.editpage_shortcut_toggle_left_desc(),
 			preventDefault: true
 		});
 		useShortcut("ctrl+shift+n", () => (showNewQuestionModal = true), {
-			name: "Create new question",
-			description: "Create new question.",
+			name: m.editpage_shortcut_new_question_name(),
+			description: m.editpage_shortcut_new_question_desc(),
 			preventDefault: true
 		});
 	});
@@ -262,7 +263,7 @@
 		room.addQuestion({
 			id: newId,
 			type: questiontype,
-			title: "New Question",
+			title: m.editpage_new_question_default_title(),
 			text: "",
 			timeLimit: 20,
 			pointsMultiplier: 1
@@ -315,7 +316,7 @@
 		if (room?.doc) {
 			const quizMeta = room.doc.getMap("quizMeta");
 			quizMeta.set("name", newName);
-			toast("Updated!", "Quiz name updated successfully.", "check", 3000, "success");
+			toast(m.common_updated_title(), m.common_quiz_name_updated_content(), "check", 3000, "success");
 		}
 	}
 </script>
@@ -379,7 +380,7 @@
 		{#if loading}
 			<Skeleton height="2rem" width="15rem" />
 		{:else}
-			<span class={styles.title}>{quizName} <VisuallyHidden>. quiz</VisuallyHidden></span>
+			<span class={styles.title}>{quizName} <VisuallyHidden>{m.editpage_quiz_suffix_hidden()}</VisuallyHidden></span>
 		{/if}
 
 		<Flex width="fit-content" height="fit-content" gap="small" alignItems="center">
@@ -407,7 +408,7 @@
 						icon="settings"
 						appearance="default"
 						{loading}
-						tip="Manage quiz" />
+						tip={m.common_manage_quiz()} />
 				{:else}
 					<Button
 						appearance="default"
@@ -415,15 +416,15 @@
 						onclick={() => {
 							viewManageQuizModal = true;
 						}}>
-						Manage quiz
+						{m.common_manage_quiz()}
 					</Button>
 					<LinkButton appearance="default" href={`/present/${params.quizid}`} {loading}>
-						Present quiz
+						{m.common_present_quiz_link()}
 					</LinkButton>
 				{/if}
 			{/if}
 
-			<LinkButton appearance="success" href="/manage">Exit</LinkButton>
+			<LinkButton appearance="success" href="/manage">{m.editpage_exit_link()}</LinkButton>
 		</Flex>
 	</div>
 
@@ -506,7 +507,7 @@
 						<span
 							style="font-size: {token.global.font.size.large}; font-weight: {token.global.font
 								.weight.bold}">
-							This question type is not yet supported!
+							{m.editpage_unsupported_question_type()}
 						</span>
 					</Flex>
 				{/if}
@@ -522,16 +523,16 @@
 					<span
 						style="font-size: {token.global.font.size.xlarge}; font-weight: {token.global.font
 							.weight.medium}">
-						Welcome to quiz '{quizName}'.
+						{m.editpage_welcome_heading({ name: quizName })}
 					</span>
-					<span>Let's start by creating a new question!</span>
+					<span>{m.editpage_welcome_subheading()}</span>
 					<Button
 						appearance="discover"
 						iconbefore="add"
 						onclick={() => {
 							showNewQuestionModal = true;
 						}}>
-						Create new question
+						{m.editpage_create_new_question_button()}
 					</Button>
 				</Flex>
 			{/if}

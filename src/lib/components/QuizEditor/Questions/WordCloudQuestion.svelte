@@ -11,6 +11,7 @@
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 
 	import * as styles from "./SharedQuestion.css";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let {
 		question,
@@ -41,11 +42,11 @@
 	justifyContent="spaceAround"
 	style="width: 100%;">
 	<div class={styles.questionContainer}>
-		<Field label="Question" name="question" overidelabel style="width: 100%;">
+		<Field label={m.editor_question_label()} name="question" overidelabel style="width: 100%;">
 			<TextArea
 				value={question?.text || ""}
 				oninput={(e) => onUpdate({ text: (e.target as HTMLTextAreaElement).value })}
-				placeholder="Start typing your word cloud prompt..."
+				placeholder={m.editor_wordcloud_placeholder()}
 				maxlength={250}
 				headless
 				style="background: transparent; border: none; text-align: center; width: 100%; outline: none; color: inherit; font-family: inherit; font-size: inherit; resize: none; word-break: break-word; overflow-wrap: break-word;" />
@@ -66,7 +67,7 @@
 					onRemove={clearMedia} />
 				{#if !question?.mediaUrl}
 					<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
-						Cancel
+						{m.common_cancel()}
 					</Button>
 				{/if}
 			</Flex>
@@ -84,9 +85,9 @@
 							mediaUrl: (e.target as HTMLInputElement).value,
 							mediaType: "youtube"
 						})}
-					placeholder="Paste a YouTube URL..." />
+					placeholder={m.editor_media_youtube_placeholder()} />
 				<Button appearance="subtle" alignContent="left" iconbefore="close" onclick={clearMedia}>
-					Remove video
+					{m.editor_media_remove_video()}
 				</Button>
 			</Flex>
 		{:else}
@@ -97,13 +98,13 @@
 						appearance="subtle"
 						iconbefore="add_photo_alternate"
 						onclick={() => onUpdate({ mediaType: "image", mediaUrl: null })}>
-						Add image
+						{m.editor_media_add_image()}
 					</Button>
 					<Button
 						appearance="subtle"
 						iconbefore="smart_display"
 						onclick={() => onUpdate({ mediaType: "youtube", mediaUrl: null })}>
-						Embed YouTube
+						{m.editor_media_embed_youtube()}
 					</Button>
 				</Flex>
 			</Flex>
@@ -111,7 +112,6 @@
 	</div>
 
 	<p style="color: {token.theme.color.text.secondary}; text-align: center; max-width: 30rem;">
-		Players type a word or short phrase. The most common responses are shown bigger in the word
-		cloud. There is no correct answer.
+		{m.editor_wordcloud_note()}
 	</p>
 </Flex>

@@ -22,6 +22,7 @@
 	import { presentQuiz } from "$lib/quizPresenter/presentQuiz.svelte";
 	import { token } from "@davidnet-net/svelte-ui/tokens";
 	import PresenterQuestion from "$lib/components/QuizPresenter/PresenterQuestion.svelte";
+	import * as m from "$lib/paraglide/messages.js";
 
 	const quizRoom = presentQuiz(() => page.params.quizid || "");
 
@@ -66,10 +67,10 @@
 		try {
 			await navigator.clipboard.writeText(url);
 			shareIcon = "check";
-			toast("Copied", "Link copied to clipboard!", "check", 3000, "success");
+			toast(m.page_present_toast_copied_title(), m.page_present_toast_copied_content(), "check", 3000, "success");
 		} catch (err) {
 			shareIcon = "error";
-			toast("Error", "Failed to copy link.", "error", 3000, "danger");
+			toast(m.common_error_title(), m.page_present_toast_copy_failed(), "error", 3000, "danger");
 		}
 		clearTimeout(iconTimeout);
 		iconTimeout = setTimeout(() => {
@@ -93,26 +94,26 @@
 {#if appState.isMobile}
 	<Flex justifyContent="center" alignItems="center" direction="column" gap="medium" text="center">
 		<Icon icon="screenshot_monitor" color="danger" size="giant" />
-		<p>Screen size is too small to present quiz.</p>
-		<Button iconbefore="arrow_back" onclick={() => navigateBack()}>Back</Button>
+		<p>{m.page_present_mobile_too_small()}</p>
+		<Button iconbefore="arrow_back" onclick={() => navigateBack()}>{m.common_back()}</Button>
 	</Flex>
 {:else if quizRoom.errorCode === "NO_QUESTIONS" || quizRoom.errorCode === "QUESTION_INVALID"}
 	<Flex justifyContent="center" alignItems="center" direction="column" gap="medium" text="center">
 		<Icon icon="quiz" color="danger" size="giant" />
 		<p>
 			{quizRoom.errorCode === "NO_QUESTIONS"
-				? "This quiz has no questions."
-				: "One or more questions are invalid."}
+				? m.page_present_no_questions()
+				: m.page_present_invalid_questions()}
 			<br />
-			Please fix them before presenting.
+			{m.page_present_fix_before_presenting()}
 		</p>
 		<Flex gap="medium" justifyContent="center" height="fit-content">
-			<Button iconbefore="arrow_back" onclick={() => navigateBack()}>Back</Button>
+			<Button iconbefore="arrow_back" onclick={() => navigateBack()}>{m.common_back()}</Button>
 			<Button
 				appearance="primary"
 				iconbefore="edit"
 				onclick={() => goto(`/manage/${page.params.quizid}/edit`)}>
-				Edit Quiz
+				{m.page_present_edit_quiz_button()}
 			</Button>
 		</Flex>
 	</Flex>
@@ -129,7 +130,8 @@
 					<div style="position: relative; z-index: 1;">
 						<h1 style="padding: 0px; margin: 0px; font-size: 5dvh;">{quizRoom.quizName}</h1>
 						<span style="padding: 0px; margin: 0px; font-size: 8dvh;">
-							PIN: <b>{quizRoom.locked ? "Locked" : quizRoom.pinCode}</b>
+							{m.page_present_pin_label()} <b
+								>{quizRoom.locked ? m.page_present_pin_locked() : quizRoom.pinCode}</b>
 						</span>
 					</div>
 					<Flex height="17dvh" width="17dvh" justifyContent="center" alignItems="center">
@@ -156,8 +158,8 @@
 			<Flex height="fit-content" justifyContent="center" alignItems="center" gap="medium">
 				<p style="padding: 0px; margin: 0px; font-size: 2dvh;">
 					{quizRoom.locked
-						? "No one can join anymore. The quiz is locked!"
-						: "Join the quiz using the pin on quiz.davidnet.net/join or scan the QRCode above."}
+						? m.page_present_locked_message()
+						: m.page_present_join_instructions()}
 				</p>
 			</Flex>
 			<Divider color="tertiary" thickness="thick" />
@@ -172,13 +174,13 @@
 						<IconButton
 							icon="delete_forever"
 							onclick={() => quizRoom.removePlayer(player.id)}
-							tip="Remove player" />
+							tip={m.page_present_remove_player_tip()} />
 					</span>
 				{/each}
 				{#if quizRoom.players.length < 1}
 					<Flex height="fit-content" justifyContent="center" alignItems="center">
 						<p style="padding: 0px; margin: 0px; font-size: 2dvh;">
-							No one has joined this quiz yet.
+							{m.page_present_no_players_joined()}
 						</p>
 					</Flex>
 				{/if}
@@ -206,7 +208,7 @@
 
 			{#if quizRoom.currentQuestionPayload?.question?.pointsMultiplier > 1}
 				<h2 class="pop-animation" style="color: var(--color-danger); font-size: 4rem; margin: 0;">
-					2X POINTS!
+					{m.page_present_2x_points()}
 				</h2>
 			{/if}
 		</Flex>
@@ -223,10 +225,12 @@
 					{Math.ceil(remainingTimeMs / 1000)}s
 				</h1>
 				{#if quizRoom.currentQuestionPayload?.question?.pointsMultiplier > 1}
-					<h2 class="pop-animation" style="color: var(--color-danger); margin: 0;">2X POINTS</h2>
+					<h2 class="pop-animation" style="color: var(--color-danger); margin: 0;">
+						{m.page_present_2x_points_active()}
+					</h2>
 				{/if}
 				<div style="font-size: 2rem; font-weight: bold;">
-					{quizRoom.responseCount} Answers
+					{m.page_present_answers_count({ count: quizRoom.responseCount })}
 				</div>
 			</div>
 
@@ -245,11 +249,11 @@
 			padding="giant"
 			style="padding-bottom: 80px; min-height: 100dvh; box-sizing: border-box;">
 			<div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-				<h1 style="font-size: 4dvh; margin: 0;">Results</h1>
+				<h1 style="font-size: 4dvh; margin: 0;">{m.page_present_results_heading()}</h1>
 				{#if quizRoom.autoMode}
 					<div
 						style="font-size: 2rem; font-weight: bold; color: {token.theme.color.text.secondary};">
-						Auto-skip in {Math.ceil(quizRoom.autoTimerRemaining / 1000)}s
+						{m.page_present_auto_skip_in({ seconds: Math.ceil(quizRoom.autoTimerRemaining / 1000) })}
 					</div>
 				{/if}
 			</div>
@@ -268,11 +272,11 @@
 			style="padding-bottom: 80px; min-height: 100dvh; box-sizing: border-box;">
 			<div
 				style="display: flex; justify-content: space-between; width: 60%; align-items: center; margin-bottom: 2rem;">
-				<h1 style="font-size: 4rem; margin: 0;">Top 5</h1>
+				<h1 style="font-size: 4rem; margin: 0;">{m.page_present_top5_heading()}</h1>
 				{#if quizRoom.autoMode}
 					<div
 						style="font-size: 2rem; font-weight: bold; color: {token.theme.color.text.secondary};">
-						Next in {Math.ceil(quizRoom.autoTimerRemaining / 1000)}s
+						{m.page_present_next_in({ seconds: Math.ceil(quizRoom.autoTimerRemaining / 1000) })}
 					</div>
 				{/if}
 			</div>
@@ -295,7 +299,7 @@
 			gap="large"
 			padding="giant"
 			style="padding-bottom: 80px; min-height: 100dvh; box-sizing: border-box;">
-			<h1 style="font-size: 5rem;">Final Podium</h1>
+			<h1 style="font-size: 5rem;">{m.page_present_final_podium()}</h1>
 			<div
 				style="display: flex; gap: 2rem; align-items: flex-end; height: 300px; margin-top: 2rem;">
 				<!-- 2nd Place -->
@@ -304,7 +308,7 @@
 						<span style="font-size: 2rem; font-weight: bold;">
 							{quizRoom.leaderboardData[1].nickname}
 						</span>
-						<span style="margin-bottom: 1rem;">{quizRoom.leaderboardData[1].score} pts</span>
+						<span style="margin-bottom: 1rem;">{quizRoom.leaderboardData[1].score} {m.page_present_pts_suffix()}</span>
 						<div
 							style="width: 100px; height: 150px; background: silver; display: flex; justify-content: center; font-size: 3rem; font-weight: bold; color: white;">
 							2
@@ -317,7 +321,7 @@
 						<span style="font-size: 2.5rem; font-weight: bold;">
 							{quizRoom.leaderboardData[0].nickname}
 						</span>
-						<span style="margin-bottom: 1rem;">{quizRoom.leaderboardData[0].score} pts</span>
+						<span style="margin-bottom: 1rem;">{quizRoom.leaderboardData[0].score} {m.page_present_pts_suffix()}</span>
 						<div
 							style="width: 120px; height: 220px; background: gold; display: flex; justify-content: center; font-size: 4rem; font-weight: bold; color: white;">
 							1
@@ -330,7 +334,7 @@
 						<span style="font-size: 1.5rem; font-weight: bold;">
 							{quizRoom.leaderboardData[2].nickname}
 						</span>
-						<span style="margin-bottom: 1rem;">{quizRoom.leaderboardData[2].score} pts</span>
+						<span style="margin-bottom: 1rem;">{quizRoom.leaderboardData[2].score} {m.page_present_pts_suffix()}</span>
 						<div
 							style="width: 100px; height: 100px; background: #cd7f32; display: flex; justify-content: center; font-size: 3rem; font-weight: bold; color: white;">
 							3
@@ -344,7 +348,7 @@
 	<!-- PERSISTENT FROSTBAR FOR ALL GAME STATES -->
 	<div class={styles.frostbar}>
 		<div style="font-size: 1.25rem; font-weight: bold;">
-			PIN: {quizRoom.locked ? "Locked" : quizRoom.pinCode}
+			{m.page_present_pin_label()} {quizRoom.locked ? m.page_present_pin_locked() : quizRoom.pinCode}
 		</div>
 		<Flex
 			height="fit-content"
@@ -356,33 +360,33 @@
 				<Button
 					appearance={quizRoom.autoMode ? "primary" : "default"}
 					onclick={() => quizRoom.toggleAutoMode()}>
-					{quizRoom.autoMode ? "Disable auto" : "Enable auto"}
+					{quizRoom.autoMode ? m.page_present_disable_auto() : m.page_present_enable_auto()}
 				</Button>
 
 				<Button appearance="primary" onclick={() => quizRoom.nextPhase()}>
 					{quizRoom.gameState === "active"
-						? "Skip / Show Results"
+						? m.page_present_skip_show_results()
 						: quizRoom.gameState === "results"
-							? "Next (Leaderboard)"
-							: "Next Question"}
+							? m.page_present_next_leaderboard()
+							: m.page_present_next_question()}
 				</Button>
 			{/if}
 
 			<IconButton
 				onclick={() => quizRoom.toggleLock()}
-				tip={quizRoom.locked ? "Unlock presentation." : "Lock presentation."}
+				tip={quizRoom.locked ? m.page_present_unlock_tip() : m.page_present_lock_tip()}
 				appearance="default"
 				icon={quizRoom.locked ? "lock_open" : "lock"} />
 			<IconButton
 				appearance="default"
 				icon={shareIcon}
 				onclick={handleShare}
-				tip="Copy share link" />
+				tip={m.page_present_copy_share_tip()} />
 			<IconButton
 				appearance="default"
 				icon={isFullscreen ? "fullscreen_exit" : "fullscreen"}
 				onclick={toggleFullscreen}
-				tip={isFullscreen ? "Exit fullscreen" : "Fullscreen"} />
+				tip={isFullscreen ? m.page_present_exit_fullscreen_tip() : m.page_present_fullscreen_tip()} />
 
 			<Button
 				appearance="default"
@@ -390,7 +394,7 @@
 					quizRoom.stopPresentation();
 					navigateBack();
 				}}>
-				Stop presenting
+				{m.page_present_stop_presenting()}
 			</Button>
 
 			{#if quizRoom.gameState === "lobby"}
@@ -398,7 +402,7 @@
 					appearance="primary"
 					disabled={quizRoom.players.length < 1}
 					onclick={() => (showStartModal = true)}>
-					Start quiz
+					{m.page_present_start_quiz()}
 				</Button>
 			{/if}
 
@@ -416,17 +420,17 @@
 {/if}
 
 {#if showStartModal}
-	<Modal title="Start quiz?" onclose={() => (showStartModal = false)}>
-		Are you sure you want to start the quiz?
+	<Modal title={m.page_present_start_modal_title()} onclose={() => (showStartModal = false)}>
+		{m.page_present_start_modal_body()}
 		{#snippet actions()}
-			<Button onclick={() => (showStartModal = false)}>Cancel</Button>
+			<Button onclick={() => (showStartModal = false)}>{m.common_cancel()}</Button>
 			<Button
 				appearance="primary"
 				onclick={() => {
 					showStartModal = false;
 					quizRoom.startQuiz();
 				}}>
-				Start quiz
+				{m.page_present_start_quiz()}
 			</Button>
 		{/snippet}
 	</Modal>

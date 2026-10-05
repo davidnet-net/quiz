@@ -16,6 +16,7 @@
 	import { PUBLIC_BACKEND_URL } from "$env/static/public";
 	import CodeInput from "$lib/components/CodeInput/CodeInput.svelte";
 	import PlayerQuestion from "$lib/components/QuizPlayer/PlayerQuestion.svelte";
+	import * as m from "$lib/paraglide/messages.js";
 
 	let step = $state<
 		| "pin"
@@ -100,8 +101,8 @@
 			const data = await res.json();
 			if (!res.ok) {
 				toast(
-					"Invalid PIN",
-					data.error || "Please check the code and try again.",
+					m.page_join_toast_invalid_pin_title(),
+					data.error || m.page_join_toast_invalid_pin_content(),
 					"warning",
 					5000,
 					"danger"
@@ -113,7 +114,13 @@
 			pinCode = code;
 			step = "nickname";
 		} catch (e) {
-			toast("Connection Error", "Failed to connect to server.", "wifi_off", 5000, "danger");
+			toast(
+				m.page_join_toast_connection_error_title(),
+				m.page_join_toast_connection_error_content(),
+				"wifi_off",
+				5000,
+				"danger"
+			);
 			pinCode = "";
 		} finally {
 			loading = false;
@@ -121,7 +128,7 @@
 	}
 
 	function resetToPinState(message: string, icon: iconType = "error") {
-		toast("Disconnected", message, icon, 5000, "danger");
+		toast(m.page_join_toast_disconnected_title(), message, icon, 5000, "danger");
 		isIntentionallyClosed = true;
 		if (socket) socket.close();
 		step = "pin";
@@ -140,7 +147,13 @@
 
 		const trimmedNickname = nickname.trim();
 		if (!trimmedNickname && !isReconnect) {
-			toast("Missing Nickname", "Please enter a nickname to join.", "person", 4000, "danger");
+			toast(
+				m.page_join_toast_missing_nickname_title(),
+				m.page_join_toast_missing_nickname_content(),
+				"person",
+				4000,
+				"danger"
+			);
 			return;
 		}
 
@@ -172,9 +185,9 @@
 					participantId = message.payload.id;
 					if (step === "nickname") step = "waiting";
 				} else if (message.type === "KICKED" || message.type === "SESSION_TERMINATED") {
-					resetToPinState(message.message || "You have been removed by the host.", "block");
+					resetToPinState(message.message || m.page_join_toast_kicked_message(), "block");
 				} else if (message.type === "ERROR") {
-					toast("Error", message.message, "error", 5000, "danger");
+					toast(m.common_error_title(), message.message, "error", 5000, "danger");
 					ws.close();
 				} else if (message.type === "QUESTION_PREVIEW") {
 					step = "preview";
@@ -206,14 +219,13 @@
 		ws.onclose = (event) => {
 			if (isIntentionallyClosed) return;
 			if (event.code === 4000 || event.code === 4001)
-				return resetToPinState("You were removed or joined from another tab.", "block");
+				return resetToPinState(m.page_join_toast_removed_other_tab(), "block");
 
 			if (step !== "pin" && step !== "nickname") {
-				if (reconnectAttempts >= 15)
-					return resetToPinState("Lost connection to the session completely.");
+				if (reconnectAttempts >= 15) return resetToPinState(m.page_join_toast_lost_connection());
 				const delay = Math.min(1000 * Math.pow(1.5, reconnectAttempts), 5000);
 				reconnectAttempts++;
-				toast("Connection Lost", `Reconnecting...`, "sync", 3000, "warning");
+				toast(m.page_join_toast_connection_lost_title(), m.page_join_toast_reconnecting(), "sync", 3000, "warning");
 				clearTimeout(reconnectTimeout);
 				reconnectTimeout = setTimeout(() => connectAndJoin(true), delay);
 			}
@@ -269,13 +281,13 @@
 		: ""}>
 	{#if step === "pin"}
 		<div>
-			<h1>Join quiz</h1>
+			<h1>{m.page_join_heading()}</h1>
 			<p style="color: {token.theme.color.text.secondary}">
-				Enter the pin displayed on the host screen.
+				{m.page_join_pin_instructions()}
 			</p>
 		</div>
 		<CodeInput bind:value={pinCode} />
-		<Button iconbefore="arrow_back" onclick={() => navigateBack()}>Back</Button>
+		<Button iconbefore="arrow_back" onclick={() => navigateBack()}>{m.common_back()}</Button>
 	{:else if step === "nickname"}
 		<Flex
 			width="fit-content"
@@ -285,44 +297,48 @@
 			text="left"
 			padding="giant">
 			<div>
-				<h1>Choose a nickname</h1>
-				<p style="color: {token.theme.color.text.secondary}">How should others see you?</p>
+				<h1>{m.page_join_nickname_heading()}</h1>
+				<p style="color: {token.theme.color.text.secondary}">{m.page_join_nickname_subheading()}</p>
 			</div>
 			<div style="width: 280px; max-width: 100%;">
-				<Field label="Nickname" name="nickname" required>
-					<TextField bind:value={nickname} placeholder="Your nickname..." maxlength={35} />
+				<Field label={m.page_join_nickname_label()} name="nickname" required>
+					<TextField
+						bind:value={nickname}
+						placeholder={m.page_join_nickname_placeholder()}
+						maxlength={35} />
 				</Field>
 			</div>
 			<Flex gap="small" width="fit-content" justifyContent="end">
-				<Button appearance="primary" onclick={() => connectAndJoin(false)} {loading}>Join</Button>
+				<Button appearance="primary" onclick={() => connectAndJoin(false)} {loading}
+					>{m.page_join_join_button()}</Button>
 				<Button
 					appearance="default"
 					onclick={() => {
 						step = "pin";
 						pinCode = "";
 					}}>
-					Back
+					{m.common_back()}
 				</Button>
 			</Flex>
 		</Flex>
 	{:else if step === "waiting"}
 		<div>
-			<h1>You're in!</h1>
+			<h1>{m.page_join_waiting_heading()}</h1>
 			<h2 style="color: {token.theme.color.text.secondary}">
-				Waiting for the host to start the quiz...
+				{m.page_join_waiting_subheading()}
 			</h2>
 		</div>
-		<p style="font-weight: bold; font-size: 1.25rem;">Nickname: {nickname}</p>
-		<Button appearance="danger" onclick={leaveSession}>Leave quiz</Button>
+		<p style="font-weight: bold; font-size: 1.25rem;">{m.page_join_nickname_display({ nickname })}</p>
+		<Button appearance="danger" onclick={leaveSession}>{m.page_join_leave_quiz()}</Button>
 	{:else if step === "preview"}
-		<h1 style="font-size: 4rem; margin: 0;">Look at the board!</h1>
+		<h1 style="font-size: 4rem; margin: 0;">{m.page_join_preview_heading()}</h1>
 		{#if currentQuestionPayload?.question?.pointsMultiplier > 1}
-			<h2 style="color: var(--color-danger); font-size: 2rem;">Double Points!</h2>
+			<h2 style="color: var(--color-danger); font-size: 2rem;">{m.page_join_double_points()}</h2>
 		{/if}
 	{:else if step === "active"}
 		<div style="width: 100%; padding: 1rem; box-sizing: border-box; ">
 			<h2 style="margin: 0; font-size: 2rem;">
-				Time left: <span style="color: {token.theme.color.text.primary}">
+				{m.page_join_time_left()} <span style="color: {token.theme.color.text.primary}">
 					{Math.ceil(remainingTimeMs / 1000)}s
 				</span>
 			</h2>
@@ -335,18 +351,18 @@
 	{:else if step === "answered"}
 		<h1 style="font-size: 3rem;">
 			{currentQuestionPayload?.question?.type === "information"
-				? "Great, let's continue!"
-				: "Answer Submitted!"}
+				? m.page_join_answered_information()
+				: m.page_join_answered_default()}
 		</h1>
-		<h2 style="color: {token.theme.color.text.secondary}">Waiting for others...</h2>
+		<h2 style="color: {token.theme.color.text.secondary}">{m.page_join_waiting_others()}</h2>
 	{:else if step === "results"}
 		{#if isNeutralResultType}
 			<div
 				style="width: 100%; height: 100%; background-color: {token.theme.color.surface.raised
 					.normal}; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-				<h1 style="font-size: 3rem; margin: 0;">Thanks!</h1>
+				<h1 style="font-size: 3rem; margin: 0;">{m.page_join_results_thanks()}</h1>
 				<h2 style="color: {token.theme.color.text.secondary}; margin: 10px 0;">
-					Take a look at the screen for the results.
+					{m.page_join_results_look_at_screen()}
 				</h2>
 			</div>
 		{:else}
@@ -355,29 +371,38 @@
 					? 'var(--color-success)'
 					: 'var(--color-danger)'}; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;">
 				<h1 style="font-size: 4rem; margin: 0;">
-					{personalResult?.correct ? "Correct!" : "Incorrect"}
+					{personalResult?.correct ? m.page_join_results_correct() : m.page_join_results_incorrect()}
 				</h1>
 				{#if personalResult?.correct}
-					<h2 style="font-size: 2rem; margin: 10px 0;">+{personalResult.pointsEarned} Points</h2>
+					<h2 style="font-size: 2rem; margin: 10px 0;">
+						{m.page_join_results_points({ points: personalResult.pointsEarned })}
+					</h2>
 				{/if}
 			</div>
 		{/if}
 	{:else if step === "leaderboard"}
 		{@const myRankIndex = currentLeaderboard.findIndex((p) => p.id === participantId)}
-		<h1 style="font-size: 3rem;">Leaderboard</h1>
+		<h1 style="font-size: 3rem;">{m.page_join_leaderboard_heading()}</h1>
 		<h2 style="color: {token.theme.color.text.secondary}">
 			{myRankIndex >= 0
-				? `You are in ${myRankIndex + 1}${myRankIndex === 0 ? "st" : myRankIndex === 1 ? "nd" : myRankIndex === 2 ? "rd" : "th"} place!`
-				: "You aren't in the top 5."}
+				? m.page_join_leaderboard_rank({
+						rank: myRankIndex + 1,
+						ordinal: myRankIndex === 0 ? "st" : myRankIndex === 1 ? "nd" : myRankIndex === 2 ? "rd" : "th"
+					})
+				: m.page_join_leaderboard_not_top5()}
 		</h2>
 	{:else if step === "finished"}
 		{@const finalRankIndex = currentLeaderboard.findIndex((p) => p.id === participantId)}
-		<h1 style="font-size: 4rem;">Game Over!</h1>
+		<h1 style="font-size: 4rem;">{m.page_join_finished_heading()}</h1>
 		<h2 style="color: {token.theme.color.text.primary}">
 			{finalRankIndex >= 0
-				? `You finished ${finalRankIndex + 1}${finalRankIndex === 0 ? "st" : finalRankIndex === 1 ? "nd" : finalRankIndex === 2 ? "rd" : "th"}!`
+				? m.page_join_finished_rank({
+						rank: finalRankIndex + 1,
+						ordinal:
+							finalRankIndex === 0 ? "st" : finalRankIndex === 1 ? "nd" : finalRankIndex === 2 ? "rd" : "th"
+					})
 				: ""}
 		</h2>
-		<Button appearance="primary" onclick={leaveSession}>Leave Quiz</Button>
+		<Button appearance="primary" onclick={leaveSession}>{m.page_join_leave_quiz_caps()}</Button>
 	{/if}
 </Flex>
